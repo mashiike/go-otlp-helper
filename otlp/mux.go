@@ -20,39 +20,6 @@ type (
 	MiddlewareFunc   func(next ProtoHandlerFunc) ProtoHandlerFunc
 )
 
-func (f ProtoHandlerFunc) HandleTrace(ctx context.Context, request *TraceRequest) (*TraceResponse, error) {
-	resp, err := f(ctx, request)
-	if err != nil {
-		return nil, err
-	}
-	if traceResp, ok := resp.(*TraceResponse); ok {
-		return traceResp, nil
-	}
-	return nil, status.Error(codes.Internal, "unexpected response type")
-}
-
-func (f ProtoHandlerFunc) HandleMetrics(ctx context.Context, request *MetricsRequest) (*MetricsResponse, error) {
-	resp, err := f(ctx, request)
-	if err != nil {
-		return nil, err
-	}
-	if metricsResp, ok := resp.(*MetricsResponse); ok {
-		return metricsResp, nil
-	}
-	return nil, status.Error(codes.Internal, "unexpected response type")
-}
-
-func (f ProtoHandlerFunc) HandleLogs(ctx context.Context, request *LogsRequest) (*LogsResponse, error) {
-	resp, err := f(ctx, request)
-	if err != nil {
-		return nil, err
-	}
-	if logsResp, ok := resp.(*LogsResponse); ok {
-		return logsResp, nil
-	}
-	return nil, status.Error(codes.Internal, "unexpected response type")
-}
-
 type ServerMux struct {
 	mu          sync.RWMutex
 	httpMux     *http.ServeMux
