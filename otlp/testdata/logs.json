@@ -1,0 +1,66 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "unknown_service:otlp.test"
+            }
+          },
+          {
+            "key": "telemetry.sdk.language",
+            "value": {
+              "stringValue": "go"
+            }
+          },
+          {
+            "key": "telemetry.sdk.name",
+            "value": {
+              "stringValue": "opentelemetry"
+            }
+          },
+          {
+            "key": "telemetry.sdk.version",
+            "value": {
+              "stringValue": "1.30.0"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "scope": {
+            "name": "test"
+          },
+          "logRecords": [
+            {
+              "timeUnixNano": "1727164332881997000",
+              "observedTimeUnixNano": "1727164332882007000",
+              "severityNumber": "SEVERITY_NUMBER_INFO",
+              "body": {
+                "stringValue": "test log"
+              },
+              "attributes": [
+                {
+                  "key": "user",
+                  "value": {
+                    "stringValue": "test user"
+                  }
+                },
+                {
+                  "key": "admin",
+                  "value": {
+                    "boolValue": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "schemaUrl": "https://opentelemetry.io/schemas/1.26.0"
+    }
+  ]
+}
