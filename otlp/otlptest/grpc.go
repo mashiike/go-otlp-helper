@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mashiike/go-otel-server/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp"
 	"google.golang.org/grpc"
 )
 
