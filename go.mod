@@ -1,4 +1,4 @@
-module github.com/mashiike/go-otel-server
+module github.com/mashiike/go-otlp-helper
 
 go 1.22
 

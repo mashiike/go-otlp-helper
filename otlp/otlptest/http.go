@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/mashiike/go-otel-server/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp"
 )
 
 type HTTPServer struct {

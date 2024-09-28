@@ -1,17 +1,17 @@
-# go-otel-server
+# go-otlp-helper
 
 OpenTelemetry Collector Server Utils
 
 ## Overview
 
-`go-otel-server` is a Go library that provides utilities for OpenTelemetry Collector servers. This library makes it easy to collect and process traces, metrics, and logs.
+`go-otlp-helper` is a Go library that provides utilities for OpenTelemetry Collector servers. This library makes it easy to collect and process traces, metrics, and logs.
 
 ## Installation
 
 You can install this library using the following command:
 
 ```sh
-go get github.com/mashiike/go-otel-server/otlp 
+go get github.com/mashiike/go-otlp-helper/otlp 
 ```
 
 ## Usage
@@ -28,7 +28,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/mashiike/go-otel-server/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -108,7 +108,7 @@ import (
 	"os"
 
 	"github.com/fujiwara/ridge"
-	"github.com/mashiike/go-otel-server/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -154,7 +154,7 @@ import (
     "testing"
     "sync/atomic"
 
-    "github.com/mashiike/go-otel-server/otlp"
+    "github.com/mashiike/go-otlp-helper/otlp"
     "github.com/stretchr/testify/assert"
 )
 

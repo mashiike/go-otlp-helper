@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mashiike/go-otel-server/otlp"
-	"github.com/mashiike/go-otel-server/otlp/otlptest"
+	"github.com/mashiike/go-otlp-helper/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp/otlptest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"

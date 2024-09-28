@@ -7,7 +7,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/mashiike/go-otel-server/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

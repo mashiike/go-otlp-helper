@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/fujiwara/ridge"
-	"github.com/mashiike/go-otel-server/otlp"
+	"github.com/mashiike/go-otlp-helper/otlp"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )

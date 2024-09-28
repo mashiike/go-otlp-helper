@@ -1,12 +1,12 @@
-module github.com/mashiike/go-otel-server/examples/lambda
+module github.com/mashiike/go-otlp-helper/examples/lambda
 
 go 1.22.7
 
-replace github.com/mashiike/go-otel-server => ../../
+replace github.com/mashiike/go-otlp-helper => ../../
 
 require (
 	github.com/fujiwara/ridge v0.11.3
-	github.com/mashiike/go-otel-server v0.0.0-00010101000000-000000000000
+	github.com/mashiike/go-otlp-helper v0.0.0-00010101000000-000000000000
 	google.golang.org/protobuf v1.34.2
 )
 
