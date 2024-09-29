@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"slices"
 	"strings"
@@ -399,6 +400,253 @@ func WithLogsEndpoint(endpoint string) ClientOption {
 			return fmt.Errorf("logs endpoint parse error: %w", err)
 		}
 		o.logs.endpoint = u
+		return nil
+	}
+}
+
+// WithHTTPClient sets the http client to be used with the request.
+func WithHTTPClient(httpClient *http.Client) ClientOption {
+	return func(o *clientOptions) error {
+		o.httpClient = httpClient
+		return nil
+	}
+}
+
+// WithTracesHTTPClient sets the http client to be used with the trace request. by default, the http client is shared with all signals.
+func WithTracesHTTPClient(httpClient *http.Client) ClientOption {
+	return func(o *clientOptions) error {
+		o.traces.httpClient = httpClient
+		return nil
+	}
+}
+
+// WithMetricsHTTPClient sets the http client to be used with the metrics request. by default, the http client is shared with all signals.
+func WithMetricsHTTPClient(httpClient *http.Client) ClientOption {
+	return func(o *clientOptions) error {
+		o.metrics.httpClient = httpClient
+		return nil
+	}
+}
+
+// WithLogsHTTPClient sets the http client to be used with the log request. by default, the http client is shared with all signals.
+func WithLogsHTTPClient(httpClient *http.Client) ClientOption {
+	return func(o *clientOptions) error {
+		o.logs.httpClient = httpClient
+		return nil
+	}
+}
+
+func lookupEnvValue(name string, envPrefixes []string, setter func(string) error) error {
+	upperName := strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
+	lowerName := strings.ToLower(strings.ReplaceAll(name, "-", "_"))
+	envPrefixes = append(envPrefixes, "")
+	for _, prefix := range envPrefixes {
+		if s, ok := os.LookupEnv(strings.ToUpper(prefix) + upperName); ok {
+			return setter(s)
+		}
+		if s, ok := os.LookupEnv(strings.ToUpper(prefix) + lowerName); ok {
+			return setter(s)
+		}
+		if s, ok := os.LookupEnv(prefix + upperName); ok {
+			return setter(s)
+		}
+		if s, ok := os.LookupEnv(prefix + lowerName); ok {
+			return setter(s)
+		}
+	}
+	return nil
+}
+
+// DefaultClientOptions returns the default client options from the environment variables.
+// see https://opentelemetry.io/docs/specs/otel/protocol/exporter
+// e.g. envPrefixes = []string{"OTEL_EXPORTER_"}
+// OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+func DefaultClientOptions(envPrefixes ...string) ClientOption {
+	return func(o *clientOptions) error {
+		if err := lookupEnvValue("OTLP_PROTOCOL", envPrefixes, func(s string) error {
+			o.protocol = s
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_TRACES_PROTOCOL", envPrefixes, func(s string) error {
+			o.traces.protocol = s
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_METRICS_PROTOCOL", envPrefixes, func(s string) error {
+			o.metrics.protocol = s
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_LOGS_PROTOCOL", envPrefixes, func(s string) error {
+			o.logs.protocol = s
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_ENDPOINT", envPrefixes, func(s string) error {
+			u, err := url.Parse(s)
+			if err != nil {
+				return fmt.Errorf("endpoint parse error: %w", err)
+			}
+			o.endpoint = u
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_TRACES_ENDPOINT", envPrefixes, func(s string) error {
+			u, err := url.Parse(s)
+			if err != nil {
+				return fmt.Errorf("traces endpoint parse error: %w", err)
+			}
+			o.traces.endpoint = u
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_METRICS_ENDPOINT", envPrefixes, func(s string) error {
+			u, err := url.Parse(s)
+			if err != nil {
+				return fmt.Errorf("metrics endpoint parse error: %w", err)
+			}
+			o.metrics.endpoint = u
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_LOGS_ENDPOINT", envPrefixes, func(s string) error {
+			u, err := url.Parse(s)
+			if err != nil {
+				return fmt.Errorf("logs endpoint parse error: %w", err)
+			}
+			o.logs.endpoint = u
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_TIMEOUT", envPrefixes, func(s string) error {
+			d, err := time.ParseDuration(s)
+			if err != nil {
+				return fmt.Errorf("export timeout parse error: %w", err)
+			}
+			o.exportTimeout = d
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_TRACES_TIMEOUT", envPrefixes, func(s string) error {
+			d, err := time.ParseDuration(s)
+			if err != nil {
+				return fmt.Errorf("traces export timeout parse error: %w", err)
+			}
+			o.traces.exportTimeout = d
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_METRICS_TIMEOUT", envPrefixes, func(s string) error {
+			d, err := time.ParseDuration(s)
+			if err != nil {
+				return fmt.Errorf("metrics export timeout parse error: %w", err)
+			}
+			o.metrics.exportTimeout = d
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_LOGS_TIMEOUT", envPrefixes, func(s string) error {
+			d, err := time.ParseDuration(s)
+			if err != nil {
+				return fmt.Errorf("logs export timeout parse error: %w", err)
+			}
+			o.logs.exportTimeout = d
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_HEADERS", envPrefixes, func(s string) error {
+			envParts := strings.Split(s, ",")
+			headers := make(map[string]string, len(envParts))
+			for _, envPart := range envParts {
+				parts := strings.SplitN(envPart, "=", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("header %q is invalid", envPart)
+				}
+				headers[parts[0]] = parts[1]
+			}
+			if o.headers == nil {
+				o.headers = make(map[string]string)
+			}
+			for key, value := range headers {
+				o.headers[key] = value
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_TRACES_HEADERS", envPrefixes, func(s string) error {
+			envParts := strings.Split(s, ",")
+			headers := make(map[string]string, len(envParts))
+			for _, envPart := range envParts {
+				parts := strings.SplitN(envPart, "=", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("traces header %q is invalid", envPart)
+				}
+				headers[parts[0]] = parts[1]
+			}
+			if o.traces.headers == nil {
+				o.traces.headers = make(map[string]string)
+			}
+			for key, value := range headers {
+				o.traces.headers[key] = value
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_METRICS_HEADERS", envPrefixes, func(s string) error {
+			envParts := strings.Split(s, ",")
+			headers := make(map[string]string, len(envParts))
+			for _, envPart := range envParts {
+				parts := strings.SplitN(envPart, "=", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("metrics header %q is invalid", envPart)
+				}
+				headers[parts[0]] = parts[1]
+			}
+			if o.metrics.headers == nil {
+				o.metrics.headers = make(map[string]string)
+			}
+			for key, value := range headers {
+				o.metrics.headers[key] = value
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+		if err := lookupEnvValue("OTLP_LOGS_HEADERS", envPrefixes, func(s string) error {
+			envParts := strings.Split(s, ",")
+			headers := make(map[string]string, len(envParts))
+			for _, envPart := range envParts {
+				parts := strings.SplitN(envPart, "=", 2)
+				if len(parts) != 2 {
+					return fmt.Errorf("logs header %q is invalid", envPart)
+				}
+				headers[parts[0]] = parts[1]
+			}
+			if o.logs.headers == nil {
+				o.logs.headers = make(map[string]string)
+			}
+			for key, value := range headers {
+				o.logs.headers[key] = value
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
 		return nil
 	}
 }
