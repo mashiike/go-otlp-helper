@@ -197,7 +197,7 @@ func (c *Client) uploadTracesWithGRPC(ctx context.Context, protoSpans []*Resourc
 	if err != nil && status.Code(err) != codes.OK {
 		return err
 	}
-	if resp != nil && resp.PartialSuccess != nil {
+	if resp != nil && resp.GetPartialSuccess() != nil {
 		return &UploadTracesPartialSuccessError{resp: resp}
 	}
 	return nil
@@ -313,7 +313,7 @@ func (c *Client) uploadMetricsWithGRPC(ctx context.Context, protoMetrics []*Reso
 	if err != nil && status.Code(err) != codes.OK {
 		return err
 	}
-	if resp != nil && resp.PartialSuccess != nil {
+	if resp != nil && resp.GetPartialSuccess() != nil {
 		return &UploadMetricsPartialSuccessError{resp: resp}
 	}
 	return nil
@@ -428,7 +428,7 @@ func (c *Client) uploadLogsWithGRPC(ctx context.Context, protoLogs []*ResourceLo
 	if err != nil && status.Code(err) != codes.OK {
 		return err
 	}
-	if resp != nil && resp.PartialSuccess != nil {
+	if resp != nil && resp.GetPartialSuccess() != nil {
 		return &UploadLogsPartialSuccessError{resp: resp}
 	}
 	return nil
