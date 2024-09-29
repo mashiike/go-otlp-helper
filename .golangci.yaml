@@ -6,6 +6,8 @@ issues:
     - path: _test\.go
       linters:
         - gocyclo
+        - errcheck
+        - testifylint
 
 linters:
   disable-all: true
@@ -23,4 +25,4 @@ linters-settings:
   gocyclo:
     min-complexity: 15
   errcheck:
-    ignore: fmt:.*,io/ioutil:^Read,^Close|^Write|^Shutdown
+    exclude-functions: fmt:.*,io/ioutil/net:^Read,^Close|^Write|,http:^Shutdown
