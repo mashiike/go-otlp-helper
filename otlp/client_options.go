@@ -2,6 +2,7 @@ package otlp
 
 import (
 	"crypto/sha512"
+	"flag"
 	"fmt"
 	"io"
 	"log/slog"
@@ -289,6 +290,63 @@ func WithLogsHeaders(headers map[string]string) ClientOption {
 	}
 }
 
+func parseHeadersString(headers string) (map[string]string, error) {
+	parts := strings.Split(headers, ",")
+	h := make(map[string]string, len(parts))
+	for _, part := range parts {
+		kv := strings.SplitN(part, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("header %q is invalid", part)
+		}
+		h[kv[0]] = kv[1]
+	}
+	return h, nil
+}
+
+// WithHeadersString sets the headers to be sent with the request. e.g. "key1=value1,key2=value2"
+func WithHeadersString(headers string) ClientOption {
+	return func(o *clientOptions) error {
+		h, err := parseHeadersString(headers)
+		if err != nil {
+			return err
+		}
+		return WithHeaders(h)(o)
+	}
+}
+
+// WithTracesHeadersString sets the headers to be sent with the trace request. by default, the headers are shared with all signals. e.g. "key1=value1,key2=value2"
+func WithTracesHeadersString(headers string) ClientOption {
+	return func(o *clientOptions) error {
+		h, err := parseHeadersString(headers)
+		if err != nil {
+			return err
+		}
+		return WithTracesHeaders(h)(o)
+	}
+}
+
+// WithMetricsHeadersString sets the headers to be sent with the metrics request. by default, the headers are shared with all signals. e.g. "key1=value1,key2=value2"
+func WithMetricsHeadersString(headers string) ClientOption {
+	return func(o *clientOptions) error {
+		h, err := parseHeadersString(headers)
+		if err != nil {
+			return err
+		}
+		return WithMetricsHeaders(h)(o)
+	}
+}
+
+// WithLogsHeadersString sets the headers to be sent with the log request. by default, the headers are shared with all signals. e.g. "key1=value1,key2=value2"
+func WithLogsHeadersString(headers string) ClientOption {
+	return func(o *clientOptions) error {
+		h, err := parseHeadersString(headers)
+		if err != nil {
+			return err
+		}
+		return WithLogsHeaders(h)(o)
+	}
+}
+
 // WithProtocol sets the protocol to be used with the request.
 func WithProtocol(protocol string) ClientOption {
 	return func(o *clientOptions) error {
@@ -462,7 +520,9 @@ func WithLogsHTTPClient(httpClient *http.Client) ClientOption {
 func lookupEnvValue(name string, envPrefixes []string, setter func(string) error) error {
 	upperName := strings.ToUpper(strings.ReplaceAll(name, "-", "_"))
 	lowerName := strings.ToLower(strings.ReplaceAll(name, "-", "_"))
-	envPrefixes = append(envPrefixes, "")
+	if len(envPrefixes) == 0 {
+		envPrefixes = []string{""}
+	}
 	for _, prefix := range envPrefixes {
 		if s, ok := os.LookupEnv(strings.ToUpper(prefix) + upperName); ok {
 			return setter(s)
@@ -559,58 +619,22 @@ var envSetters = map[string]func(o *clientOptions) func(string) error{
 	},
 	"OTLP_HEADERS": func(o *clientOptions) func(string) error {
 		return func(s string) error {
-			envParts := strings.Split(s, ",")
-			headers := make(map[string]string, len(envParts))
-			for _, envPart := range envParts {
-				parts := strings.SplitN(envPart, "=", 2)
-				if len(parts) != 2 {
-					return fmt.Errorf("header %q is invalid", envPart)
-				}
-				headers[parts[0]] = parts[1]
-			}
-			return WithHeaders(headers)(o)
+			return WithHeadersString(s)(o)
 		}
 	},
 	"OTLP_TRACES_HEADERS": func(o *clientOptions) func(string) error {
 		return func(s string) error {
-			envParts := strings.Split(s, ",")
-			headers := make(map[string]string, len(envParts))
-			for _, envPart := range envParts {
-				parts := strings.SplitN(envPart, "=", 2)
-				if len(parts) != 2 {
-					return fmt.Errorf("traces header %q is invalid", envPart)
-				}
-				headers[parts[0]] = parts[1]
-			}
-			return WithTracesHeaders(headers)(o)
+			return WithTracesHeadersString(s)(o)
 		}
 	},
 	"OTLP_METRICS_HEADERS": func(o *clientOptions) func(string) error {
 		return func(s string) error {
-			envParts := strings.Split(s, ",")
-			headers := make(map[string]string, len(envParts))
-			for _, envPart := range envParts {
-				parts := strings.SplitN(envPart, "=", 2)
-				if len(parts) != 2 {
-					return fmt.Errorf("metrics header %q is invalid", envPart)
-				}
-				headers[parts[0]] = parts[1]
-			}
-			return WithMetricsHeaders(headers)(o)
+			return WithMetricsHeadersString(s)(o)
 		}
 	},
 	"OTLP_LOGS_HEADERS": func(o *clientOptions) func(string) error {
 		return func(s string) error {
-			envParts := strings.Split(s, ",")
-			headers := make(map[string]string, len(envParts))
-			for _, envPart := range envParts {
-				parts := strings.SplitN(envPart, "=", 2)
-				if len(parts) != 2 {
-					return fmt.Errorf("logs header %q is invalid", envPart)
-				}
-				headers[parts[0]] = parts[1]
-			}
-			return WithLogsHeaders(headers)(o)
+			return WithLogsHeadersString(s)(o)
 		}
 	},
 }
@@ -627,6 +651,61 @@ func DefaultClientOptions(envPrefixes ...string) ClientOption {
 			}
 		}
 		return nil
+	}
+}
+
+func flagEnvString(name string, envPrefixes []string) string {
+	names := make([]string, 0, len(envPrefixes))
+	if len(envPrefixes) == 0 {
+		envPrefixes = []string{""}
+	}
+	for _, prefix := range envPrefixes {
+		names = append(names, "$"+strings.ToUpper(prefix+name))
+	}
+	return " (" + strings.Join(names, ",") + ")"
+}
+
+func flagNameString(name string, flagPrefix string) string {
+	return strings.ToLower(flagPrefix + strings.ReplaceAll(name, "_", "-"))
+}
+
+var flagUsages = map[string]string{
+	"OTLP_PROTOCOL":         "OTLP protocol to use e.g. grpc, http/json, http/protobuf",
+	"OTLP_TRACES_PROTOCOL":  "OTLP traces protocol to use, overrides --otlp-protocol",
+	"OTLP_METRICS_PROTOCOL": "OTLP metrics protocol to use, overrides --otlp-protocol",
+	"OTLP_LOGS_PROTOCOL":    "OTLP logs protocol to use, overrides --otlp-protocol",
+	"OTLP_ENDPOINT":         "OTLP endpoint to use, e.g. http://localhost:4317",
+	"OTLP_TRACES_ENDPOINT":  "OTLP traces endpoint to use, overrides --otlp-endpoint",
+	"OTLP_METRICS_ENDPOINT": "OTLP metrics endpoint to use, overrides --otlp-endpoint",
+	"OTLP_LOGS_ENDPOINT":    "OTLP logs endpoint to use, overrides --otlp-endpoint",
+	"OTLP_TIMEOUT":          "OTLP export timeout to use, e.g. 5s",
+	"OTLP_TRACES_TIMEOUT":   "OTLP traces export timeout to use, overrides --otlp-timeout",
+	"OTLP_METRICS_TIMEOUT":  "OTLP metrics export timeout to use, overrides --otlp-timeout",
+	"OTLP_LOGS_TIMEOUT":     "OTLP logs export timeout to use, overrides --otlp-timeout",
+	"OTLP_HEADERS":          "OTLP headers to use, e.g. key1=value1,key2=value2",
+	"OTLP_TRACES_HEADERS":   "OTLP traces headers to use, append or override --otlp-headers",
+	"OTLP_METRICS_HEADERS":  "OTLP metrics headers to use, append or override --otlp-headers",
+	"OTLP_LOGS_HEADERS":     "OTLP logs headers to use, append or override --otlp-headers",
+}
+
+// ClientOptionsWithFlagSet returns the client options from the flag set.
+func ClientOptionsWithFlagSet(fs *flag.FlagSet, flagPrefix string, envPrefixes ...string) ClientOption {
+	options := make([]ClientOption, 0, len(envSetters))
+	options = append(options, DefaultClientOptions(envPrefixes...))
+	for name, setter := range envSetters {
+		flagName := flagNameString(name, flagPrefix)
+		var value string
+		usage := flagUsages[name] + flagEnvString(name, envPrefixes)
+		fs.StringVar(&value, flagName, "", usage)
+		options = append(options, func(o *clientOptions) error {
+			if value != "" {
+				return setter(o)(value)
+			}
+			return nil
+		})
+	}
+	return func(o *clientOptions) error {
+		return o.apply(options...)
 	}
 }
 
