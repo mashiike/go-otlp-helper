@@ -4,7 +4,8 @@ OpenTelemetry Collector Server Utils
 
 ## Overview
 
-`go-otlp-helper` is a Go library that provides utilities for OpenTelemetry Collector servers. This library makes it easy to collect and process traces, metrics, and logs.
+`go-otlp-helper` is a Go library that provides helpers for OpenTelemetry Low-Level servers and client.
+This library makes it easy to collect and process traces, metrics, and logs.
 
 ## Installation
 
@@ -95,6 +96,103 @@ func main() {
 
 }
 ```
+
+### simple otlp client example:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"math/rand"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/mashiike/go-otlp-helper/otlp"
+	common "go.opentelemetry.io/proto/otlp/common/v1"
+	resource "go.opentelemetry.io/proto/otlp/resource/v1"
+	trace "go.opentelemetry.io/proto/otlp/trace/v1"
+)
+
+func main() {
+	client, err := otlp.NewClient(
+		"http://127.0.0.1:4317",
+		otlp.DefaultClientOptions("OTEL_EXPORTER_"),
+	)
+	if err != nil {
+		slog.Error("failed to create client", "details", err)
+		os.Exit(1)
+	}
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+	if err := client.Start(ctx); err != nil {
+		slog.Error("failed to start client", "details", err)
+		os.Exit(1)
+	}
+	now := time.Now()
+	randReader := rand.New(rand.NewSource(now.UnixNano()))
+	traceID := make([]byte, 16)
+	randReader.Read(traceID)
+	spanID1 := make([]byte, 8)
+	randReader.Read(spanID1)
+	spanID2 := make([]byte, 8)
+	randReader.Read(spanID2)
+	resourceSpancs := []*trace.ResourceSpans{
+		{
+			Resource: &resource.Resource{
+				Attributes: []*common.KeyValue{
+					{
+						Key: "service.name",
+						Value: &common.AnyValue{
+							Value: &common.AnyValue_StringValue{
+								StringValue: "example-service",
+							},
+						},
+					},
+				},
+			},
+			ScopeSpans: []*trace.ScopeSpans{
+				{
+					Spans: []*trace.Span{
+						{
+							TraceId:           traceID,
+							SpanId:            spanID1,
+							Name:              "example-outer-span",
+							Kind:              trace.Span_SPAN_KIND_INTERNAL,
+							StartTimeUnixNano: uint64(now.Add(-1 * time.Second).UnixNano()),
+							EndTimeUnixNano:   uint64(now.UnixNano()),
+							Status: &trace.Status{
+								Code: trace.Status_STATUS_CODE_OK,
+							},
+						},
+						{
+							TraceId:           traceID,
+							SpanId:            spanID2,
+							ParentSpanId:      spanID1,
+							Name:              "example-inner-span",
+							Kind:              trace.Span_SPAN_KIND_INTERNAL,
+							StartTimeUnixNano: uint64(now.Add(-500 * time.Millisecond).UnixNano()),
+							EndTimeUnixNano:   uint64(now.Add(-250 * time.Millisecond).UnixNano()),
+							Status: &trace.Status{
+								Code: trace.Status_STATUS_CODE_OK,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if err := client.UploadTraces(ctx, resourceSpancs); err != nil {
+		slog.Error("failed to upload traces", "details", err)
+		os.Exit(1)
+	}
+}
+```
+
+this example is sending 2 spans to the server. with grpc protocol.
 
 ### http server for Lambda Function example:
 
