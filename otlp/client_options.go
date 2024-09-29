@@ -3,6 +3,8 @@ package otlp
 import (
 	"crypto/sha512"
 	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,6 +20,7 @@ import (
 )
 
 type clientOptions struct {
+	logger        *slog.Logger
 	endpoint      *url.URL
 	protocol      string
 	userAgent     string
@@ -105,6 +108,12 @@ func (so *clientSignalsOptions) fillDefaults(o *clientOptions) {
 }
 
 func (o *clientOptions) build() error {
+	if o.logger == nil {
+		o.logger = slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+			Level: slog.LevelError,
+		}))
+	}
+	o.logger = o.logger.With("module", "otlp-client")
 	if o.userAgent == "" {
 		o.userAgent = fmt.Sprintf(
 			"go-otlp-helper/%s (github.com/mashiike/go-otlp-helper/otlp.Client) go/%s",
@@ -356,10 +365,24 @@ func WithLogsExportTimeout(exportTimeout time.Duration) ClientOption {
 	}
 }
 
+func parseEndpoint(endpoint string) (*url.URL, error) {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return nil, fmt.Errorf("endpoint parse error: %w", err)
+	}
+	if u.Scheme == "" {
+		return nil, fmt.Errorf("endpoint scheme is required")
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("endpoint scheme %q is not allowed", u.Scheme)
+	}
+	return u, nil
+}
+
 // WithEndpoint sets the endpoint to be used with the request.
 func WithEndpoint(endpoint string) ClientOption {
 	return func(o *clientOptions) error {
-		u, err := url.Parse(endpoint)
+		u, err := parseEndpoint(endpoint)
 		if err != nil {
 			return fmt.Errorf("endpoint parse error: %w", err)
 		}
@@ -371,7 +394,7 @@ func WithEndpoint(endpoint string) ClientOption {
 // WithTracesEndpoint sets the endpoint to be used with the trace request. by default, the endpoint is shared with all signals.
 func WithTracesEndpoint(endpoint string) ClientOption {
 	return func(o *clientOptions) error {
-		u, err := url.Parse(endpoint)
+		u, err := parseEndpoint(endpoint)
 		if err != nil {
 			return fmt.Errorf("traces endpoint parse error: %w", err)
 		}
@@ -383,7 +406,7 @@ func WithTracesEndpoint(endpoint string) ClientOption {
 // WithMetricsEndpoint sets the endpoint to be used with the metrics request. by default, the endpoint is shared with all signals.
 func WithMetricsEndpoint(endpoint string) ClientOption {
 	return func(o *clientOptions) error {
-		u, err := url.Parse(endpoint)
+		u, err := parseEndpoint(endpoint)
 		if err != nil {
 			return fmt.Errorf("metrics endpoint parse error: %w", err)
 		}
@@ -395,7 +418,7 @@ func WithMetricsEndpoint(endpoint string) ClientOption {
 // WithLogsEndpoint sets the endpoint to be used with the log request. by default, the endpoint is shared with all signals.
 func WithLogsEndpoint(endpoint string) ClientOption {
 	return func(o *clientOptions) error {
-		u, err := url.Parse(endpoint)
+		u, err := parseEndpoint(endpoint)
 		if err != nil {
 			return fmt.Errorf("logs endpoint parse error: %w", err)
 		}
@@ -647,6 +670,14 @@ func DefaultClientOptions(envPrefixes ...string) ClientOption {
 		}); err != nil {
 			return err
 		}
+		return nil
+	}
+}
+
+// WithLogger sets the logger to be used with the request.
+func WithLogger(logger *slog.Logger) ClientOption {
+	return func(o *clientOptions) error {
+		o.logger = logger
 		return nil
 	}
 }

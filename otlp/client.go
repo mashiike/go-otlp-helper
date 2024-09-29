@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
-	"net/url"
 	"sync"
 
 	collogspb "go.opentelemetry.io/proto/otlp/collector/logs/v1"
@@ -43,7 +43,7 @@ type Client struct {
 func NewClient(endpoint string, opts ...ClientOption) (*Client, error) {
 	o := &clientOptions{}
 	if endpoint != "" {
-		u, err := url.Parse(endpoint)
+		u, err := parseEndpoint(endpoint)
 		if err != nil {
 			return nil, fmt.Errorf("endpoint parse error: %w", err)
 		}
@@ -52,6 +52,30 @@ func NewClient(endpoint string, opts ...ClientOption) (*Client, error) {
 	if err := o.apply(opts...); err != nil {
 		return nil, err
 	}
+	o.logger.Debug(
+		"initializing client",
+		slog.Group("traces",
+			"protocol", o.traces.protocol,
+			"endpoint", o.traces.endpoint.String(),
+			"address", o.traces.endpoint.Host,
+			"insecure", o.traces.endpoint.Scheme != "https",
+			"timeout", o.traces.exportTimeout,
+		),
+		slog.Group("metrics",
+			"protocol", o.metrics.protocol,
+			"endpoint", o.metrics.endpoint.String(),
+			"address", o.metrics.endpoint.Host,
+			"insecure", o.metrics.endpoint.Scheme != "https",
+			"timeout", o.metrics.exportTimeout,
+		),
+		slog.Group("logs",
+			"protocol", o.logs.protocol,
+			"endpoint", o.logs.endpoint.String(),
+			"address", o.logs.endpoint.Host,
+			"insecure", o.logs.endpoint.Scheme != "https",
+			"timeout", o.logs.exportTimeout,
+		),
+	)
 	client := &Client{
 		o:            o,
 		conns:        make(map[string]*grpc.ClientConn, 3),
@@ -87,6 +111,7 @@ func (c *Client) startGRPC(ctx context.Context, so *clientSignalsOptions) error 
 	if _, ok := c.conns[connHash]; ok {
 		return nil
 	}
+	c.o.logger.InfoContext(ctx, "connecting to gRPC server", "target", target, "conn_hash", connHash[0:8])
 	conn, err := grpc.NewClient(target, dialOptions...)
 	if err != nil {
 		return err
@@ -165,6 +190,7 @@ func (c *Client) uploadTracesWithGRPC(ctx context.Context, protoSpans []*Resourc
 	ctx, cancel := c.newGRPCContext(ctx, &c.o.traces)
 	defer cancel()
 
+	c.o.logger.InfoContext(ctx, "uploading traces with gRPC", "conn_hash", connHash[0:8], "num_resource_spans", len(protoSpans))
 	resp, err := sericeClient.Export(ctx, &coltracepb.ExportTraceServiceRequest{
 		ResourceSpans: protoSpans,
 	})
@@ -212,6 +238,7 @@ func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*Resourc
 	if client == nil {
 		client = http.DefaultClient
 	}
+	c.o.logger.InfoContext(ctx, "uploading traces with HTTP", "endpoint", c.o.traces.endpoint.String(), "num_resource_spans", len(protoSpans))
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
@@ -279,6 +306,7 @@ func (c *Client) uploadMetricsWithGRPC(ctx context.Context, protoMetrics []*Reso
 	ctx, cancel := c.newGRPCContext(ctx, &c.o.metrics)
 	defer cancel()
 
+	c.o.logger.InfoContext(ctx, "uploading metrics", "conn_hash", connHash[0:8], "num_resource_metrics", len(protoMetrics))
 	resp, err := serviceClient.Export(ctx, &colmetricpb.ExportMetricsServiceRequest{
 		ResourceMetrics: protoMetrics,
 	})
@@ -326,6 +354,7 @@ func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*Reso
 	if client == nil {
 		client = http.DefaultClient
 	}
+	c.o.logger.InfoContext(ctx, "uploading metrics", "endpoint", c.o.metrics.endpoint.String(), "num_resource_metrics", len(protoMetrics))
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
@@ -392,7 +421,7 @@ func (c *Client) uploadLogsWithGRPC(ctx context.Context, protoLogs []*ResourceLo
 	serviceClient := collogspb.NewLogsServiceClient(conn)
 	ctx, cancel := c.newGRPCContext(ctx, &c.o.logs)
 	defer cancel()
-
+	c.o.logger.InfoContext(ctx, "uploading logs with gRPC", "conn_hash", connHash[0:8], "num_resource_logs", len(protoLogs))
 	resp, err := serviceClient.Export(ctx, &collogspb.ExportLogsServiceRequest{
 		ResourceLogs: protoLogs,
 	})
@@ -440,6 +469,7 @@ func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLo
 	if client == nil {
 		client = http.DefaultClient
 	}
+	c.o.logger.InfoContext(ctx, "uploading logs with HTTP", "endpoint", c.o.logs.endpoint.String(), "num_resource_logs", len(protoLogs))
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
@@ -495,10 +525,11 @@ func (c *Client) Stop(ctx context.Context) error {
 		return ErrAlreadyClosed
 	}
 	var colseErrs []error
-	for _, conn := range c.conns {
+	for connHash, conn := range c.conns {
 		if conn == nil {
 			continue
 		}
+		c.o.logger.InfoContext(ctx, "disconnecting from gRPC server", "conn_hash", connHash[0:8])
 		if closeErr := conn.Close(); closeErr != nil {
 			colseErrs = append(colseErrs, closeErr)
 		}
