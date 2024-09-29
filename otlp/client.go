@@ -243,7 +243,11 @@ func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*Resourc
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.o.logger.WarnContext(ctx, "failed to close response body", "details", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -359,7 +363,11 @@ func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*Reso
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.o.logger.WarnContext(ctx, "failed to close response body", "details", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
@@ -474,7 +482,11 @@ func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLo
 	if err != nil {
 		return fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			c.o.logger.WarnContext(ctx, "failed to close response body", "details", err)
+		}
+	}()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
