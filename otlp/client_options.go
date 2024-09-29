@@ -480,122 +480,85 @@ func lookupEnvValue(name string, envPrefixes []string, setter func(string) error
 	return nil
 }
 
-// DefaultClientOptions returns the default client options from the environment variables.
-// see https://opentelemetry.io/docs/specs/otel/protocol/exporter
-// e.g. envPrefixes = []string{"OTEL_EXPORTER_"}
-// OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
-func DefaultClientOptions(envPrefixes ...string) ClientOption {
-	return defaultClientOptions(envPrefixes...)
-}
-
-//nolint:gocyclo
-func defaultClientOptions(envPrefixes ...string) ClientOption {
-	return func(o *clientOptions) error {
-		if err := lookupEnvValue("OTLP_PROTOCOL", envPrefixes, func(s string) error {
-			o.protocol = s
-			return nil
-		}); err != nil {
-			return err
+var envSetters = map[string]func(o *clientOptions) func(string) error{
+	"OTLP_PROTOCOL": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithProtocol(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_TRACES_PROTOCOL", envPrefixes, func(s string) error {
-			o.traces.protocol = s
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_TRACES_PROTOCOL": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithTracesProtocol(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_METRICS_PROTOCOL", envPrefixes, func(s string) error {
-			o.metrics.protocol = s
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_METRICS_PROTOCOL": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithMetricsProtocol(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_LOGS_PROTOCOL", envPrefixes, func(s string) error {
-			o.logs.protocol = s
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_LOGS_PROTOCOL": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithLogsProtocol(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_ENDPOINT", envPrefixes, func(s string) error {
-			u, err := url.Parse(s)
-			if err != nil {
-				return fmt.Errorf("endpoint parse error: %w", err)
-			}
-			o.endpoint = u
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_ENDPOINT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithEndpoint(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_TRACES_ENDPOINT", envPrefixes, func(s string) error {
-			u, err := url.Parse(s)
-			if err != nil {
-				return fmt.Errorf("traces endpoint parse error: %w", err)
-			}
-			o.traces.endpoint = u
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_TRACES_ENDPOINT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithTracesEndpoint(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_METRICS_ENDPOINT", envPrefixes, func(s string) error {
-			u, err := url.Parse(s)
-			if err != nil {
-				return fmt.Errorf("metrics endpoint parse error: %w", err)
-			}
-			o.metrics.endpoint = u
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_METRICS_ENDPOINT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithMetricsEndpoint(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_LOGS_ENDPOINT", envPrefixes, func(s string) error {
-			u, err := url.Parse(s)
-			if err != nil {
-				return fmt.Errorf("logs endpoint parse error: %w", err)
-			}
-			o.logs.endpoint = u
-			return nil
-		}); err != nil {
-			return err
+	},
+	"OTLP_LOGS_ENDPOINT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
+			return WithLogsEndpoint(s)(o)
 		}
-		if err := lookupEnvValue("OTLP_TIMEOUT", envPrefixes, func(s string) error {
+	},
+	"OTLP_TIMEOUT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			d, err := time.ParseDuration(s)
 			if err != nil {
 				return fmt.Errorf("export timeout parse error: %w", err)
 			}
-			o.exportTimeout = d
-			return nil
-		}); err != nil {
-			return err
+			return WithExportTimeout(d)(o)
 		}
-		if err := lookupEnvValue("OTLP_TRACES_TIMEOUT", envPrefixes, func(s string) error {
+	},
+	"OTLP_TRACES_TIMEOUT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			d, err := time.ParseDuration(s)
 			if err != nil {
 				return fmt.Errorf("traces export timeout parse error: %w", err)
 			}
-			o.traces.exportTimeout = d
-			return nil
-		}); err != nil {
-			return err
+			return WithTracesExportTimeout(d)(o)
 		}
-		if err := lookupEnvValue("OTLP_METRICS_TIMEOUT", envPrefixes, func(s string) error {
+	},
+	"OTLP_METRICS_TIMEOUT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			d, err := time.ParseDuration(s)
 			if err != nil {
 				return fmt.Errorf("metrics export timeout parse error: %w", err)
 			}
-			o.metrics.exportTimeout = d
-			return nil
-		}); err != nil {
-			return err
+			return WithMetricsExportTimeout(d)(o)
 		}
-		if err := lookupEnvValue("OTLP_LOGS_TIMEOUT", envPrefixes, func(s string) error {
+	},
+	"OTLP_LOGS_TIMEOUT": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			d, err := time.ParseDuration(s)
 			if err != nil {
 				return fmt.Errorf("logs export timeout parse error: %w", err)
 			}
-			o.logs.exportTimeout = d
-			return nil
-		}); err != nil {
-			return err
+			return WithLogsExportTimeout(d)(o)
 		}
-		if err := lookupEnvValue("OTLP_HEADERS", envPrefixes, func(s string) error {
+	},
+	"OTLP_HEADERS": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			envParts := strings.Split(s, ",")
 			headers := make(map[string]string, len(envParts))
 			for _, envPart := range envParts {
@@ -605,17 +568,11 @@ func defaultClientOptions(envPrefixes ...string) ClientOption {
 				}
 				headers[parts[0]] = parts[1]
 			}
-			if o.headers == nil {
-				o.headers = make(map[string]string)
-			}
-			for key, value := range headers {
-				o.headers[key] = value
-			}
-			return nil
-		}); err != nil {
-			return err
+			return WithHeaders(headers)(o)
 		}
-		if err := lookupEnvValue("OTLP_TRACES_HEADERS", envPrefixes, func(s string) error {
+	},
+	"OTLP_TRACES_HEADERS": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			envParts := strings.Split(s, ",")
 			headers := make(map[string]string, len(envParts))
 			for _, envPart := range envParts {
@@ -625,17 +582,11 @@ func defaultClientOptions(envPrefixes ...string) ClientOption {
 				}
 				headers[parts[0]] = parts[1]
 			}
-			if o.traces.headers == nil {
-				o.traces.headers = make(map[string]string)
-			}
-			for key, value := range headers {
-				o.traces.headers[key] = value
-			}
-			return nil
-		}); err != nil {
-			return err
+			return WithTracesHeaders(headers)(o)
 		}
-		if err := lookupEnvValue("OTLP_METRICS_HEADERS", envPrefixes, func(s string) error {
+	},
+	"OTLP_METRICS_HEADERS": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			envParts := strings.Split(s, ",")
 			headers := make(map[string]string, len(envParts))
 			for _, envPart := range envParts {
@@ -645,17 +596,11 @@ func defaultClientOptions(envPrefixes ...string) ClientOption {
 				}
 				headers[parts[0]] = parts[1]
 			}
-			if o.metrics.headers == nil {
-				o.metrics.headers = make(map[string]string)
-			}
-			for key, value := range headers {
-				o.metrics.headers[key] = value
-			}
-			return nil
-		}); err != nil {
-			return err
+			return WithMetricsHeaders(headers)(o)
 		}
-		if err := lookupEnvValue("OTLP_LOGS_HEADERS", envPrefixes, func(s string) error {
+	},
+	"OTLP_LOGS_HEADERS": func(o *clientOptions) func(string) error {
+		return func(s string) error {
 			envParts := strings.Split(s, ",")
 			headers := make(map[string]string, len(envParts))
 			for _, envPart := range envParts {
@@ -665,15 +610,21 @@ func defaultClientOptions(envPrefixes ...string) ClientOption {
 				}
 				headers[parts[0]] = parts[1]
 			}
-			if o.logs.headers == nil {
-				o.logs.headers = make(map[string]string)
+			return WithLogsHeaders(headers)(o)
+		}
+	},
+}
+
+// DefaultClientOptions returns the default client options from the environment variables.
+// see https://opentelemetry.io/docs/specs/otel/protocol/exporter
+// e.g. envPrefixes = []string{"OTEL_EXPORTER_"}
+// OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
+func DefaultClientOptions(envPrefixes ...string) ClientOption {
+	return func(o *clientOptions) error {
+		for name, setter := range envSetters {
+			if err := lookupEnvValue(name, envPrefixes, setter(o)); err != nil {
+				return err
 			}
-			for key, value := range headers {
-				o.logs.headers[key] = value
-			}
-			return nil
-		}); err != nil {
-			return err
 		}
 		return nil
 	}
