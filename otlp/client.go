@@ -203,36 +203,44 @@ func (c *Client) uploadTracesWithGRPC(ctx context.Context, protoSpans []*Resourc
 	return nil
 }
 
-func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*ResourceSpans) error {
-	data := &coltracepb.ExportTraceServiceRequest{
-		ResourceSpans: protoSpans,
-	}
-	contentType := c.o.traces.httpContentType()
-	var body []byte
+func newHTTPRequest[T proto.Message](ctx context.Context, so *clientSignalsOptions, body T) (*http.Request, error) {
+	contentType := so.httpContentType()
+	var bs []byte
 	var err error
 	if contentType == "application/x-protobuf" {
-		body, err = proto.Marshal(data)
+		bs, err = proto.Marshal(body)
 	} else {
-		body, err = protojson.Marshal(data)
+		bs, err = protojson.Marshal(body)
 	}
 	if err != nil {
-		return fmt.Errorf("failed to marshal body: %w", err)
+		return nil, fmt.Errorf("failed to marshal body: %w", err)
 	}
 	req, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
-		c.o.traces.endpoint.String(),
-		bytes.NewReader(body),
+		so.endpoint.String(),
+		bytes.NewReader(bs),
 	)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("User-Agent", c.o.traces.userAgent)
-	if len(c.o.traces.headers) > 0 {
-		for k, v := range c.o.traces.headers {
+	req.Header.Set("User-Agent", so.userAgent)
+	if len(so.headers) > 0 {
+		for k, v := range so.headers {
 			req.Header.Set(k, v)
 		}
+	}
+	return req, nil
+}
+
+func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*ResourceSpans) error {
+	data := &coltracepb.ExportTraceServiceRequest{
+		ResourceSpans: protoSpans,
+	}
+	req, err := newHTTPRequest(ctx, &c.o.traces, data)
+	if err != nil {
+		return err
 	}
 	client := c.o.traces.httpClient
 	if client == nil {
@@ -327,32 +335,9 @@ func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*Reso
 	data := &colmetricpb.ExportMetricsServiceRequest{
 		ResourceMetrics: protoMetrics,
 	}
-	contentType := c.o.metrics.httpContentType()
-	var body []byte
-	var err error
-	if contentType == "application/x-protobuf" {
-		body, err = proto.Marshal(data)
-	} else {
-		body, err = protojson.Marshal(data)
-	}
+	req, err := newHTTPRequest(ctx, &c.o.metrics, data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal body: %w", err)
-	}
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		c.o.metrics.endpoint.String(),
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("User-Agent", c.o.metrics.userAgent)
-	if len(c.o.metrics.headers) > 0 {
-		for k, v := range c.o.metrics.headers {
-			req.Header.Set(k, v)
-		}
+		return err
 	}
 	client := c.o.metrics.httpClient
 	if client == nil {
@@ -446,32 +431,9 @@ func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLo
 	data := &collogspb.ExportLogsServiceRequest{
 		ResourceLogs: protoLogs,
 	}
-	contentType := c.o.logs.httpContentType()
-	var body []byte
-	var err error
-	if contentType == "application/x-protobuf" {
-		body, err = proto.Marshal(data)
-	} else {
-		body, err = protojson.Marshal(data)
-	}
+	req, err := newHTTPRequest(ctx, &c.o.logs, data)
 	if err != nil {
-		return fmt.Errorf("failed to marshal body: %w", err)
-	}
-	req, err := http.NewRequestWithContext(
-		ctx,
-		http.MethodPost,
-		c.o.logs.endpoint.String(),
-		bytes.NewReader(body),
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", contentType)
-	req.Header.Set("User-Agent", c.o.logs.userAgent)
-	if len(c.o.logs.headers) > 0 {
-		for k, v := range c.o.logs.headers {
-			req.Header.Set(k, v)
-		}
+		return err
 	}
 	client := c.o.logs.httpClient
 	if client == nil {
