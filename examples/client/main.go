@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -22,13 +23,14 @@ func main() {
 	})))
 	client, err := otlp.NewClient(
 		"http://127.0.0.1:4317",
-		otlp.DefaultClientOptions("OTEL_EXPORTER_"),
+		otlp.ClientOptionsWithFlagSet(flag.CommandLine, "", "OTEL_EXPORTER_"),
 		otlp.WithLogger(slog.Default()),
 	)
 	if err != nil {
 		slog.Error("failed to create client", "details", err)
 		os.Exit(1)
 	}
+	flag.Parse()
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 	if err := client.Start(ctx); err != nil {
