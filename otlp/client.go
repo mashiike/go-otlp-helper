@@ -264,7 +264,7 @@ func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*Resourc
 	default:
 		return fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
-	if respData.PartialSuccess != nil {
+	if respData.GetPartialSuccess() != nil {
 		return &UploadTracesPartialSuccessError{resp: &respData}
 	}
 	return nil
@@ -380,7 +380,7 @@ func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*Reso
 	default:
 		return fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
-	if respData.PartialSuccess != nil {
+	if respData.GetPartialSuccess() != nil {
 		return &UploadMetricsPartialSuccessError{resp: &respData}
 	}
 	return nil
@@ -495,7 +495,7 @@ func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLo
 	default:
 		return fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
-	if respData.PartialSuccess != nil {
+	if respData.GetPartialSuccess() != nil {
 		return &UploadLogsPartialSuccessError{resp: &respData}
 	}
 	return nil
