@@ -75,12 +75,15 @@ var allowedProtocols = []string{
 // AllowedProtocols is the list of allowed protocol values.
 var AllowedProtocols = allowedProtocols
 
-func (so *clientSignalsOptions) fillDefaults(o *clientOptions) {
+func (so *clientSignalsOptions) fillDefaults(o *clientOptions) error {
 	if so.userAgent == "" {
 		so.userAgent = o.userAgent
 	}
 	if so.protocol == "" {
 		so.protocol = o.protocol
+	}
+	if !slices.Contains(allowedProtocols, so.protocol) {
+		return fmt.Errorf("protocol %q is not allowed", so.protocol)
 	}
 	if so.gzip == nil {
 		so.gzip = o.gzip
@@ -98,6 +101,9 @@ func (so *clientSignalsOptions) fillDefaults(o *clientOptions) {
 			so.endpoint = o.endpoint
 		}
 	}
+	if so.endpoint == nil {
+		return fmt.Errorf("%s endpoint is required", so.signalType)
+	}
 	if so.headers == nil {
 		so.headers = make(map[string]string, len(o.headers))
 	}
@@ -106,6 +112,7 @@ func (so *clientSignalsOptions) fillDefaults(o *clientOptions) {
 			so.headers[key] = value
 		}
 	}
+	return nil
 }
 
 func (o *clientOptions) build() error {
@@ -132,11 +139,17 @@ func (o *clientOptions) build() error {
 		o.httpClient = http.DefaultClient
 	}
 	o.traces.signalType = "traces"
-	o.traces.fillDefaults(o)
+	if err := o.traces.fillDefaults(o); err != nil {
+		return err
+	}
 	o.metrics.signalType = "metrics"
-	o.metrics.fillDefaults(o)
+	if err := o.metrics.fillDefaults(o); err != nil {
+		return err
+	}
 	o.logs.signalType = "logs"
-	o.logs.fillDefaults(o)
+	if err := o.logs.fillDefaults(o); err != nil {
+		return err
+	}
 	return nil
 }
 
