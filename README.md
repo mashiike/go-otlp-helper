@@ -1,7 +1,5 @@
 # go-otlp-helper
 
-OpenTelemetry Collector Server Utils
-
 ## Overview
 
 `go-otlp-helper` is a Go library that provides helpers for OpenTelemetry Low-Level servers and client.
