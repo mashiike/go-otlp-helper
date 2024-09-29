@@ -485,6 +485,7 @@ func lookupEnvValue(name string, envPrefixes []string, setter func(string) error
 // e.g. envPrefixes = []string{"OTEL_EXPORTER_"}
 // OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 func DefaultClientOptions(envPrefixes ...string) ClientOption {
+	//nolint:gocyclo
 	return func(o *clientOptions) error {
 		if err := lookupEnvValue("OTLP_PROTOCOL", envPrefixes, func(s string) error {
 			o.protocol = s
