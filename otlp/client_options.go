@@ -102,7 +102,7 @@ func (so *clientSignalsOptions) fillDefaults(o *clientOptions) error {
 		}
 	}
 	if so.endpoint == nil {
-		return fmt.Errorf("%S endpoint is required", so.signalType)
+		return fmt.Errorf("%s endpoint is required", so.signalType)
 	}
 	if so.headers == nil {
 		so.headers = make(map[string]string, len(o.headers))
