@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.2.2](https://github.com/mashiike/go-otlp-helper/compare/v0.2.1...v0.2.2) - 2024-09-29
+- fix panic, when no provides endpoint by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/8
+
 ## [v0.2.1](https://github.com/mashiike/go-otlp-helper/compare/v0.2.0...v0.2.1) - 2024-09-29
 - add flags by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/6
 
