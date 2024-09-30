@@ -32,6 +32,7 @@ func TestJSONEncoding_Trace(t *testing.T) {
 	require.Len(t, spans, 1)
 	require.Len(t, spans[0].GetTraceId(), 16)
 	require.Len(t, spans[0].GetSpanId(), 8)
+	require.Len(t, spans[0].GetParentSpanId(), 8)
 
 	var buf bytes.Buffer
 	enc := otlp.NewJSONEncoder(&buf)

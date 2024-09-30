@@ -95,7 +95,9 @@ func convertTraceIDAndSpanIDBase64ToHexForAny(data any) any {
 }
 
 func keyIsTraceIDOrSpanID(k string) bool {
-	return strings.EqualFold(strings.ReplaceAll(k, "_", ""), "traceId") || strings.EqualFold(strings.ReplaceAll(k, "_", ""), "spanId")
+	key := strings.ReplaceAll(k, "_", "")
+	key = strings.ToLower(key)
+	return strings.Contains(key, "traceid") || strings.Contains(key, "spanid")
 }
 
 func convertTraceIDAndSpanIDBase64ToHexForMap(data map[string]interface{}) map[string]interface{} {
