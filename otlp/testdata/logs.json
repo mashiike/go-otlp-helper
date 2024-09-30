@@ -6,25 +6,7 @@
           {
             "key": "service.name",
             "value": {
-              "stringValue": "unknown_service:otlp.test"
-            }
-          },
-          {
-            "key": "telemetry.sdk.language",
-            "value": {
-              "stringValue": "go"
-            }
-          },
-          {
-            "key": "telemetry.sdk.name",
-            "value": {
-              "stringValue": "opentelemetry"
-            }
-          },
-          {
-            "key": "telemetry.sdk.version",
-            "value": {
-              "stringValue": "1.30.0"
+              "stringValue": "my.service"
             }
           }
         ]
@@ -32,35 +14,88 @@
       "scopeLogs": [
         {
           "scope": {
-            "name": "test"
+            "name": "my.library",
+            "version": "1.0.0",
+            "attributes": [
+              {
+                "key": "my.scope.attribute",
+                "value": {
+                  "stringValue": "some scope attribute"
+                }
+              }
+            ]
           },
           "logRecords": [
             {
-              "timeUnixNano": "1727164332881997000",
-              "observedTimeUnixNano": "1727164332882007000",
-              "severityNumber": "SEVERITY_NUMBER_INFO",
+              "timeUnixNano": "1544712660300000000",
+              "observedTimeUnixNano": "1544712660300000000",
+              "severityNumber": 10,
+              "severityText": "Information",
+              "traceId": "5B8EFFF798038103D269B633813FC60C",
+              "spanId": "EEE19B7EC3C1B174",
               "body": {
-                "stringValue": "test log"
+                "stringValue": "Example log record"
               },
               "attributes": [
                 {
-                  "key": "user",
+                  "key": "string.attribute",
                   "value": {
-                    "stringValue": "test user"
+                    "stringValue": "some string"
                   }
                 },
                 {
-                  "key": "admin",
+                  "key": "boolean.attribute",
                   "value": {
                     "boolValue": true
+                  }
+                },
+                {
+                  "key": "int.attribute",
+                  "value": {
+                    "intValue": "10"
+                  }
+                },
+                {
+                  "key": "double.attribute",
+                  "value": {
+                    "doubleValue": 637.704
+                  }
+                },
+                {
+                  "key": "array.attribute",
+                  "value": {
+                    "arrayValue": {
+                      "values": [
+                        {
+                          "stringValue": "many"
+                        },
+                        {
+                          "stringValue": "values"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "key": "map.attribute",
+                  "value": {
+                    "kvlistValue": {
+                      "values": [
+                        {
+                          "key": "some.map.key",
+                          "value": {
+                            "stringValue": "some value"
+                          }
+                        }
+                      ]
+                    }
                   }
                 }
               ]
             }
           ]
         }
-      ],
-      "schemaUrl": "https://opentelemetry.io/schemas/1.26.0"
+      ]
     }
   ]
 }

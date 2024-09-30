@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -68,7 +67,7 @@ func errorProto(w http.ResponseWriter, st *status.Status) {
 
 func errorJSON(w http.ResponseWriter, st *status.Status) {
 	httpStatus := grpcCodeToHTTPStatus(st.Code())
-	bs, err := protojson.Marshal(st.Proto())
+	bs, err := MarshalJSON(st.Proto())
 	if err != nil {
 		http.Error(w, http.StatusText(httpStatus), httpStatus)
 	}
@@ -159,7 +158,7 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *ht
 		return
 	}
 	defer r.Body.Close()
-	if err := protojson.Unmarshal(bs, req); err != nil {
+	if err := UnmarshalJSON(bs, req); err != nil {
 		st := status.New(codes.InvalidArgument, "Unable to unmarshal request body")
 		st, _ = st.WithDetails(&errdetails.ErrorInfo{Reason: err.Error()})
 		errorJSON(w, st)
@@ -174,7 +173,7 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *ht
 		errorJSON(w, status.New(codes.Internal, err.Error()))
 		return
 	}
-	data, err := protojson.Marshal(resp)
+	data, err := MarshalJSON(resp)
 	if err != nil {
 		st := status.New(codes.Internal, "Unable to marshal response")
 		st, _ = st.WithDetails(&errdetails.ErrorInfo{Reason: err.Error()})

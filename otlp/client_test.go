@@ -13,16 +13,23 @@ import (
 	"github.com/mashiike/go-otlp-helper/otlp/otlptest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
+
+func assertEqualMessage[T proto.Message](t *testing.T, expected, actual T) {
+	t.Helper()
+	acutalJSON, err := otlp.MarshalJSON(actual)
+	assert.NoError(t, err)
+	expectedJSON, err := otlp.MarshalJSON(expected)
+	assert.NoError(t, err)
+	assert.JSONEq(t, string(expectedJSON), string(acutalJSON))
+}
 
 func TestClient_GRPC_Traces(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.TraceRequest
 	mux.Trace().HandleFunc(func(ctx context.Context, request *otlp.TraceRequest) (*otlp.TraceResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -43,7 +50,7 @@ func TestClient_GRPC_Traces(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.TraceRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -51,16 +58,14 @@ func TestClient_GRPC_Traces(t *testing.T) {
 	err = client.UploadTraces(ctx, req.GetResourceSpans())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_GRPC_Metrics(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.MetricsRequest
 	mux.Metrics().HandleFunc(func(ctx context.Context, request *otlp.MetricsRequest) (*otlp.MetricsResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -81,7 +86,7 @@ func TestClient_GRPC_Metrics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.MetricsRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -89,16 +94,14 @@ func TestClient_GRPC_Metrics(t *testing.T) {
 	err = client.UploadMetrics(ctx, req.GetResourceMetrics())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_GRPC_Logs(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.LogsRequest
 	mux.Logs().HandleFunc(func(ctx context.Context, request *otlp.LogsRequest) (*otlp.LogsResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -119,7 +122,7 @@ func TestClient_GRPC_Logs(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.LogsRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -127,16 +130,14 @@ func TestClient_GRPC_Logs(t *testing.T) {
 	err = client.UploadLogs(ctx, req.GetResourceLogs())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_HTTP_ProtoBuf_Traces(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.TraceRequest
 	mux.Trace().HandleFunc(func(ctx context.Context, request *otlp.TraceRequest) (*otlp.TraceResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -164,7 +165,7 @@ func TestClient_HTTP_ProtoBuf_Traces(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.TraceRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -172,16 +173,14 @@ func TestClient_HTTP_ProtoBuf_Traces(t *testing.T) {
 	err = client.UploadTraces(ctx, req.GetResourceSpans())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_HTTP_JSON_Traces(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.TraceRequest
 	mux.Trace().HandleFunc(func(ctx context.Context, request *otlp.TraceRequest) (*otlp.TraceResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -209,7 +208,7 @@ func TestClient_HTTP_JSON_Traces(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.TraceRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -217,16 +216,14 @@ func TestClient_HTTP_JSON_Traces(t *testing.T) {
 	err = client.UploadTraces(ctx, req.GetResourceSpans())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_HTTP_ProtoBuf_Metrics(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.MetricsRequest
 	mux.Metrics().HandleFunc(func(ctx context.Context, request *otlp.MetricsRequest) (*otlp.MetricsResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -254,7 +251,7 @@ func TestClient_HTTP_ProtoBuf_Metrics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.MetricsRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -262,16 +259,14 @@ func TestClient_HTTP_ProtoBuf_Metrics(t *testing.T) {
 	err = client.UploadMetrics(ctx, req.GetResourceMetrics())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_HTTP_JSON_Metrics(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.MetricsRequest
 	mux.Metrics().HandleFunc(func(ctx context.Context, request *otlp.MetricsRequest) (*otlp.MetricsResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -299,7 +294,7 @@ func TestClient_HTTP_JSON_Metrics(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.MetricsRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -307,16 +302,14 @@ func TestClient_HTTP_JSON_Metrics(t *testing.T) {
 	err = client.UploadMetrics(ctx, req.GetResourceMetrics())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_HTTP_ProtoBuf_Logs(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.LogsRequest
 	mux.Logs().HandleFunc(func(ctx context.Context, request *otlp.LogsRequest) (*otlp.LogsResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -344,7 +337,7 @@ func TestClient_HTTP_ProtoBuf_Logs(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.LogsRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -352,16 +345,14 @@ func TestClient_HTTP_ProtoBuf_Logs(t *testing.T) {
 	err = client.UploadLogs(ctx, req.GetResourceLogs())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_HTTP_JSON_Logs(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actual []byte
+	var actual *otlp.LogsRequest
 	mux.Logs().HandleFunc(func(ctx context.Context, request *otlp.LogsRequest) (*otlp.LogsResponse, error) {
-		var err error
-		actual, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actual = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummy", headers.Get("Api-Key"))
@@ -389,7 +380,7 @@ func TestClient_HTTP_JSON_Logs(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var req otlp.LogsRequest
-	err = protojson.Unmarshal(expected, &req)
+	err = otlp.UnmarshalJSON(expected, &req)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -397,17 +388,19 @@ func TestClient_HTTP_JSON_Logs(t *testing.T) {
 	err = client.UploadLogs(ctx, req.GetResourceLogs())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expected), string(actual))
+	assertEqualMessage(t, &req, actual)
 }
 
 func TestClient_EnvOptions(t *testing.T) {
 	mux := otlp.NewServerMux()
-	var actualTraces, actualMetrics, actualLogs []byte
+	var (
+		actualTraces  *otlp.TraceRequest
+		actualMetrics *otlp.MetricsRequest
+		actualLogs    *otlp.LogsRequest
+	)
 	var actualTraceProtocol, actualMetricsProtocol, actualLogsProtocol string
 	mux.Trace().HandleFunc(func(ctx context.Context, request *otlp.TraceRequest) (*otlp.TraceResponse, error) {
-		var err error
-		actualTraces, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actualTraces = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummyTraces", headers.Get("Api-Key"))
@@ -416,9 +409,7 @@ func TestClient_EnvOptions(t *testing.T) {
 		return &otlp.TraceResponse{}, nil
 	})
 	mux.Metrics().HandleFunc(func(ctx context.Context, request *otlp.MetricsRequest) (*otlp.MetricsResponse, error) {
-		var err error
-		actualMetrics, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actualMetrics = request
 		headers, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummyMetrics", headers.Get("Api-Key"))
@@ -427,9 +418,7 @@ func TestClient_EnvOptions(t *testing.T) {
 		return &otlp.MetricsResponse{}, nil
 	})
 	mux.Logs().HandleFunc(func(ctx context.Context, request *otlp.LogsRequest) (*otlp.LogsResponse, error) {
-		var err error
-		actualLogs, err = protojson.Marshal(request)
-		assert.NoError(t, err)
+		actualLogs = request
 		header, ok := otlp.HeadersFromContext(ctx)
 		assert.True(t, ok)
 		assert.Equal(t, "dummyTraces", header.Get("Api-Key"))
@@ -462,13 +451,13 @@ func TestClient_EnvOptions(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	var reqTraces otlp.TraceRequest
-	err = protojson.Unmarshal(expectedTraces, &reqTraces)
+	err = otlp.UnmarshalJSON(expectedTraces, &reqTraces)
 	require.NoError(t, err)
 	var reqMetrics otlp.MetricsRequest
-	err = protojson.Unmarshal(expectedMetrics, &reqMetrics)
+	err = otlp.UnmarshalJSON(expectedMetrics, &reqMetrics)
 	require.NoError(t, err)
 	var reqLogs otlp.LogsRequest
-	err = protojson.Unmarshal(expectedLogs, &reqLogs)
+	err = otlp.UnmarshalJSON(expectedLogs, &reqLogs)
 	require.NoError(t, err)
 	err = client.Start(ctx)
 	require.NoError(t, err)
@@ -480,9 +469,9 @@ func TestClient_EnvOptions(t *testing.T) {
 	err = client.UploadLogs(ctx, reqLogs.GetResourceLogs())
 	require.NoError(t, err)
 
-	assert.JSONEq(t, string(expectedTraces), string(actualTraces))
-	assert.JSONEq(t, string(expectedMetrics), string(actualMetrics))
-	assert.JSONEq(t, string(expectedLogs), string(actualLogs))
+	assertEqualMessage(t, &reqTraces, actualTraces)
+	assertEqualMessage(t, &reqMetrics, actualMetrics)
+	assertEqualMessage(t, &reqLogs, actualLogs)
 	assert.Equal(t, "application/json", actualTraceProtocol)
 	assert.Equal(t, "application/grpc", actualMetricsProtocol)
 	assert.Equal(t, "application/grpc", actualLogsProtocol)

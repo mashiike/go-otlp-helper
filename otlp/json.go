@@ -13,6 +13,32 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var defaultMarshalOptions = protojson.MarshalOptions{
+	UseEnumNumbers:  true,
+	EmitUnpopulated: false,
+}
+
+// MarshalJSON marshals a proto.Message to JSON bytes. for OTLP, traceID and spanID are converted from base64 to hex.
+func MarshalJSON(msg proto.Message) ([]byte, error) {
+	data, err := defaultMarshalOptions.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return convertTraceIDAndSpanIDBase64ToHex(data), nil
+}
+
+// MarshalIndentJSON marshals a proto.Message to indented JSON bytes. for OTLP, traceID and spanID are converted from base64 to hex.
+func MarshalIndentJSON(msg proto.Message, indent string) ([]byte, error) {
+	marshaler := defaultMarshalOptions
+	marshaler.Multiline = true
+	marshaler.Indent = indent
+	data, err := marshaler.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return convertTraceIDAndSpanIDBase64ToHex(data), nil
+}
+
 type JSONEncoder struct {
 	writer    io.Writer
 	marshaler protojson.MarshalOptions
@@ -20,11 +46,8 @@ type JSONEncoder struct {
 
 func NewJSONEncoder(writer io.Writer) *JSONEncoder {
 	return &JSONEncoder{
-		writer: writer,
-		marshaler: protojson.MarshalOptions{
-			UseEnumNumbers:  true,
-			EmitUnpopulated: false,
-		},
+		writer:    writer,
+		marshaler: defaultMarshalOptions,
 	}
 }
 
@@ -91,6 +114,20 @@ func convertTraceIDAndSpanIDBase64ToHexForMap(data map[string]interface{}) map[s
 		data[k] = convertTraceIDAndSpanIDBase64ToHexForAny(v)
 	}
 	return data
+}
+
+// UnmarshalJSON unmarshals JSON bytes to a proto.Message. for OTLP, traceID and spanID are converted from hex to base64.
+func UnmarshalJSON(data []byte, msg proto.Message) error {
+	var m any
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	m = convertTraceIDAndSpanIDHexToBase64ForAny(m)
+	data, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	return protojson.Unmarshal(data, msg)
 }
 
 type JSONDecoder struct {

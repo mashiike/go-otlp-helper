@@ -25,7 +25,7 @@ func TestJSONEncoding_Trace(t *testing.T) {
 	require.NotNil(t, attr)
 	require.Equal(t, "service.name", attr.GetKey())
 	require.NotNil(t, attr.GetValue())
-	require.Equal(t, "example-service", attr.GetValue().GetStringValue())
+	require.Equal(t, "my.service", attr.GetValue().GetStringValue())
 	ss := rs.GetScopeSpans()
 	require.Len(t, ss, 1)
 	spans := ss[0].GetSpans()

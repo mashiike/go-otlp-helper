@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/log"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -30,13 +29,12 @@ type testContextKey string
 func TestMux__HTTP_Trace(t *testing.T) {
 	traceData, err := os.ReadFile("testdata/trace.json")
 	require.NoError(t, err)
-
+	var expected otlp.TraceRequest
+	require.NoError(t, otlp.UnmarshalJSON(traceData, &expected))
 	mux := otlp.NewServerMux()
 	handleCount := 0
 	mux.Trace().HandleFunc(func(_ context.Context, req *otlp.TraceRequest) (*otlp.TraceResponse, error) {
-		actual, err := protojson.Marshal(req)
-		require.NoError(t, err)
-		assert.JSONEq(t, string(traceData), string(actual))
+		assertEqualMessage(t, &expected, req)
 		handleCount++
 		return &otlp.TraceResponse{}, nil
 	})
@@ -53,12 +51,13 @@ func TestMux__HTTP_Metrics(t *testing.T) {
 	metricsData, err := os.ReadFile("testdata/metrics.json")
 	require.NoError(t, err)
 
+	var expected otlp.MetricsRequest
+	require.NoError(t, otlp.UnmarshalJSON(metricsData, &expected))
+
 	mux := otlp.NewServerMux()
 	handleCount := 0
 	mux.Metrics().HandleFunc(func(_ context.Context, req *otlp.MetricsRequest) (*otlp.MetricsResponse, error) {
-		actual, err := protojson.Marshal(req)
-		require.NoError(t, err)
-		assert.JSONEq(t, string(metricsData), string(actual))
+		assertEqualMessage(t, &expected, req)
 		handleCount++
 		return &otlp.MetricsResponse{}, nil
 	})
@@ -74,13 +73,13 @@ func TestMux__HTTP_Metrics(t *testing.T) {
 func TestMux__HTTP_Logs(t *testing.T) {
 	logsData, err := os.ReadFile("testdata/logs.json")
 	require.NoError(t, err)
+	var expected otlp.LogsRequest
+	require.NoError(t, otlp.UnmarshalJSON(logsData, &expected))
 
 	mux := otlp.NewServerMux()
 	handleCount := 0
 	mux.Logs().HandleFunc(func(_ context.Context, req *otlp.LogsRequest) (*otlp.LogsResponse, error) {
-		actual, err := protojson.Marshal(req)
-		require.NoError(t, err)
-		assert.JSONEq(t, string(logsData), string(actual))
+		assertEqualMessage(t, &expected, req)
 		handleCount++
 		return &otlp.LogsResponse{}, nil
 	})
