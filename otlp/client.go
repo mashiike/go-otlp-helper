@@ -178,6 +178,20 @@ func (e *UploadTracesPartialSuccessError) Error() string {
 	return fmt.Sprintf("failed to export %d spans: %s", n, msg)
 }
 
+func errorCheckForUploadTraces(resp *coltracepb.ExportTraceServiceResponse) error {
+	if resp == nil {
+		return nil
+	}
+	ps := resp.GetPartialSuccess()
+	if ps == nil {
+		return nil
+	}
+	if ps.GetRejectedSpans() > 0 {
+		return &UploadTracesPartialSuccessError{resp: resp}
+	}
+	return nil
+}
+
 func (c *Client) uploadTracesWithGRPC(ctx context.Context, protoSpans []*ResourceSpans) error {
 	_, _, connHash := c.o.traces.grpcConnectionInfo()
 	conn, ok := c.conns[connHash]
@@ -196,10 +210,7 @@ func (c *Client) uploadTracesWithGRPC(ctx context.Context, protoSpans []*Resourc
 	if err != nil && status.Code(err) != codes.OK {
 		return err
 	}
-	if resp != nil && resp.GetPartialSuccess() != nil {
-		return &UploadTracesPartialSuccessError{resp: resp}
-	}
-	return nil
+	return errorCheckForUploadTraces(resp)
 }
 
 func newHTTPRequest[T proto.Message](ctx context.Context, so *clientSignalsOptions, body T) (*http.Request, error) {
@@ -275,10 +286,7 @@ func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*Resourc
 	default:
 		return fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
-	if respData.GetPartialSuccess() != nil {
-		return &UploadTracesPartialSuccessError{resp: &respData}
-	}
-	return nil
+	return errorCheckForUploadTraces(&respData)
 }
 
 func (c *Client) UploadMetrics(ctx context.Context, protoMetrics []*ResourceMetrics) error {
@@ -306,6 +314,20 @@ func (e *UploadMetricsPartialSuccessError) Error() string {
 	return fmt.Sprintf("failed to export %d metrics: %s", n, msg)
 }
 
+func errorCheckForUploadMetrics(resp *colmetricpb.ExportMetricsServiceResponse) error {
+	if resp == nil {
+		return nil
+	}
+	ps := resp.GetPartialSuccess()
+	if ps == nil {
+		return nil
+	}
+	if ps.GetRejectedDataPoints() > 0 {
+		return &UploadMetricsPartialSuccessError{resp: resp}
+	}
+	return nil
+}
+
 func (c *Client) uploadMetricsWithGRPC(ctx context.Context, protoMetrics []*ResourceMetrics) error {
 	_, _, connHash := c.o.metrics.grpcConnectionInfo()
 	conn, ok := c.conns[connHash]
@@ -324,10 +346,7 @@ func (c *Client) uploadMetricsWithGRPC(ctx context.Context, protoMetrics []*Reso
 	if err != nil && status.Code(err) != codes.OK {
 		return err
 	}
-	if resp != nil && resp.GetPartialSuccess() != nil {
-		return &UploadMetricsPartialSuccessError{resp: resp}
-	}
-	return nil
+	return errorCheckForUploadMetrics(resp)
 }
 
 func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*ResourceMetrics) error {
@@ -372,10 +391,7 @@ func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*Reso
 	default:
 		return fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
-	if respData.GetPartialSuccess() != nil {
-		return &UploadMetricsPartialSuccessError{resp: &respData}
-	}
-	return nil
+	return errorCheckForUploadMetrics(&respData)
 }
 
 func (c *Client) UploadLogs(ctx context.Context, protoLogs []*ResourceLogs) error {
@@ -403,6 +419,20 @@ func (e *UploadLogsPartialSuccessError) Error() string {
 	return fmt.Sprintf("failed to export %d logs: %s", n, msg)
 }
 
+func errorCheckForUploadLogs(resp *collogspb.ExportLogsServiceResponse) error {
+	if resp == nil {
+		return nil
+	}
+	ps := resp.GetPartialSuccess()
+	if ps == nil {
+		return nil
+	}
+	if ps.GetRejectedLogRecords() > 0 {
+		return &UploadLogsPartialSuccessError{resp: resp}
+	}
+	return nil
+}
+
 func (c *Client) uploadLogsWithGRPC(ctx context.Context, protoLogs []*ResourceLogs) error {
 	_, _, connHash := c.o.logs.grpcConnectionInfo()
 	conn, ok := c.conns[connHash]
@@ -420,10 +450,7 @@ func (c *Client) uploadLogsWithGRPC(ctx context.Context, protoLogs []*ResourceLo
 	if err != nil && status.Code(err) != codes.OK {
 		return err
 	}
-	if resp != nil && resp.GetPartialSuccess() != nil {
-		return &UploadLogsPartialSuccessError{resp: resp}
-	}
-	return nil
+	return errorCheckForUploadLogs(resp)
 }
 
 func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLogs) error {
@@ -468,10 +495,7 @@ func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLo
 	default:
 		return fmt.Errorf("unexpected content type: %s", resp.Header.Get("Content-Type"))
 	}
-	if respData.GetPartialSuccess() != nil {
-		return &UploadLogsPartialSuccessError{resp: &respData}
-	}
-	return nil
+	return errorCheckForUploadLogs(&respData)
 }
 
 func (c *Client) Stop(ctx context.Context) error {
