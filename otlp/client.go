@@ -496,6 +496,9 @@ func (c *Client) Stop(ctx context.Context) error {
 	}
 	defer c.mu.Unlock()
 	if len(c.conns) == 0 {
+		if c.o.maxGRPCConns() == 0 {
+			return nil
+		}
 		return ErrAlreadyClosed
 	}
 	var colseErrs []error
