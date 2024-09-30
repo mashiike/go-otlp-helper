@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.2.6](https://github.com/mashiike/go-otlp-helper/compare/v0.2.5...v0.2.6) - 2024-09-30
+- fix indent marshal by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/16
+
 ## [v0.2.5](https://github.com/mashiike/go-otlp-helper/compare/v0.2.4...v0.2.5) - 2024-09-30
 - fix response check by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/14
 
