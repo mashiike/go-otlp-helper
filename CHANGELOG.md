@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.2.4](https://github.com/mashiike/go-otlp-helper/compare/v0.2.3...v0.2.4) - 2024-09-30
+- fix JSON ProtocolBuf Encoding by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/12
+
 ## [v0.2.3](https://github.com/mashiike/go-otlp-helper/compare/v0.2.2...v0.2.3) - 2024-09-30
 - when no grpc, no close error by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/10
 
