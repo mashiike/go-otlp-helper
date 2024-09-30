@@ -175,6 +175,20 @@ func (so *clientSignalsOptions) httpContentType() string {
 	}
 }
 
+func (so *clientOptions) maxGRPCConns() int {
+	var maxConns int
+	if so.traces.isGRPCProtocol() {
+		maxConns++
+	}
+	if so.metrics.isGRPCProtocol() {
+		maxConns++
+	}
+	if so.logs.isGRPCProtocol() {
+		maxConns++
+	}
+	return maxConns
+}
+
 func (so *clientSignalsOptions) grpcConnectionInfo() (string, []grpc.DialOption, string) {
 	so.mu.Lock()
 	defer so.mu.Unlock()
