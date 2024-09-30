@@ -2,6 +2,8 @@ package otlp
 
 import (
 	"context"
+	"io"
+	"log/slog"
 	"net/http"
 	"sync"
 
@@ -27,14 +29,20 @@ type ServerMux struct {
 	metrics     *metricsEntry
 	logs        *logsEntry
 	middlewares []MiddlewareFunc
+	logger      *slog.Logger
 }
 
 var DefaultServerMux = NewServerMux()
+
+var discardLogger = slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+	Level: slog.LevelError,
+}))
 
 func NewServerMux() *ServerMux {
 	return &ServerMux{
 		httpMux:     http.NewServeMux(),
 		middlewares: make([]MiddlewareFunc, 0),
+		logger:      discardLogger,
 	}
 }
 
@@ -43,6 +51,12 @@ func (mux *ServerMux) Use(m ...MiddlewareFunc) *ServerMux {
 	defer mux.mu.Unlock()
 	mux.middlewares = append(mux.middlewares, m...)
 	return mux
+}
+
+func (mux *ServerMux) SetLogger(logger *slog.Logger) {
+	mux.mu.Lock()
+	defer mux.mu.Unlock()
+	mux.logger = logger
 }
 
 func (mux *ServerMux) chainedMiddleware() MiddlewareFunc {
@@ -144,12 +158,14 @@ func (mux *ServerMux) newTraceEntry() *traceEntry {
 		mux.trace = &traceEntry{
 			mux: mux,
 		}
-		mux.trace.ph = newProxyHandler(
+		ph := newProxyHandler(
 			func(_ context.Context) *TraceRequest {
 				return &TraceRequest{}
 			},
 			mux.trace.Export,
 		)
+		ph.SetLogger(mux.logger)
+		mux.trace.ph = ph
 		mux.httpMux.Handle("/v1/traces", mux.trace)
 	}
 	return mux.trace
@@ -260,12 +276,14 @@ func (mux *ServerMux) newMetricsEntry() *metricsEntry {
 		mux.metrics = &metricsEntry{
 			mux: mux,
 		}
-		mux.metrics.ph = newProxyHandler(
+		ph := newProxyHandler(
 			func(_ context.Context) *MetricsRequest {
 				return &MetricsRequest{}
 			},
 			mux.metrics.Export,
 		)
+		ph.SetLogger(mux.logger)
+		mux.metrics.ph = ph
 		mux.httpMux.Handle("/v1/metrics", mux.metrics)
 	}
 	return mux.metrics
@@ -376,12 +394,14 @@ func (mux *ServerMux) newLogsEntry() *logsEntry {
 		mux.logs = &logsEntry{
 			mux: mux,
 		}
-		mux.logs.ph = newProxyHandler(
+		ph := newProxyHandler(
 			func(_ context.Context) *LogsRequest {
 				return &logspb.ExportLogsServiceRequest{}
 			},
 			mux.logs.Export,
 		)
+		ph.SetLogger(mux.logger)
+		mux.logs.ph = ph
 		mux.httpMux.Handle("/v1/logs", mux.logs)
 	}
 	return mux.logs
