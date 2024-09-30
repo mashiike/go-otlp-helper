@@ -55,6 +55,7 @@ func (e *JSONEncoder) SetIndent(indent string) {
 	e.marshaler.Multiline = true
 	e.marshaler.Indent = indent
 }
+
 func (e *JSONEncoder) Encode(msg proto.Message) error {
 	data, err := e.marshaler.Marshal(msg)
 	if err != nil {
