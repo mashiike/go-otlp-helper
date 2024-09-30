@@ -25,4 +25,4 @@ linters-settings:
   gocyclo:
     min-complexity: 15
   errcheck:
-    exclude-functions: fmt:.*,io/ioutil/net:^Read,^Close|^Write|,http:^Shutdown
+    exclude-functions: fmt:.*,io/ioutil/net/http:^Read,^Close|^Write|,http:^Shutdown

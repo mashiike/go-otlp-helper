@@ -14,7 +14,6 @@ import (
 	common "go.opentelemetry.io/proto/otlp/common/v1"
 	resource "go.opentelemetry.io/proto/otlp/resource/v1"
 	trace "go.opentelemetry.io/proto/otlp/trace/v1"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func main() {
@@ -101,10 +100,7 @@ func dumpResourceSpans(resourceSpans []*trace.ResourceSpans) {
 	req := &otlp.TraceRequest{
 		ResourceSpans: resourceSpans,
 	}
-	bs, err := protojson.MarshalOptions{
-		Multiline: true,
-		Indent:    "  ",
-	}.Marshal(req)
+	bs, err := otlp.MarshalIndentJSON(req, "  ")
 	if err != nil {
 		slog.Error("failed to marshal request", "details", err)
 		os.Exit(1)

@@ -8,7 +8,6 @@ import (
 
 	"github.com/fujiwara/ridge"
 	"github.com/mashiike/go-otlp-helper/otlp"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -20,7 +19,7 @@ func main() {
 	)
 	mux := otlp.NewServerMux()
 	enc := func(ctx context.Context, msg proto.Message) {
-		bs, err := protojson.Marshal(msg)
+		bs, err := otlp.MarshalJSON(msg)
 		if err != nil {
 			slog.ErrorContext(ctx, "failed to marshal proto message", "msg", err)
 			return

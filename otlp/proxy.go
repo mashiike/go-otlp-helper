@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -68,7 +68,7 @@ func errorProto(w http.ResponseWriter, st *status.Status) {
 
 func errorJSON(w http.ResponseWriter, st *status.Status) {
 	httpStatus := grpcCodeToHTTPStatus(st.Code())
-	bs, err := protojson.Marshal(st.Proto())
+	bs, err := MarshalJSON(st.Proto())
 	if err != nil {
 		http.Error(w, http.StatusText(httpStatus), httpStatus)
 	}
@@ -80,13 +80,19 @@ func errorJSON(w http.ResponseWriter, st *status.Status) {
 type proxyHandler[Req, Resp proto.Message] struct {
 	newRequestFunc func(context.Context) Req
 	handler        func(context.Context, Req) (Resp, error)
+	logger         *slog.Logger
 }
 
 func newProxyHandler[Req, Resp proto.Message](newRequestFunc func(context.Context) Req, handler func(context.Context, Req) (Resp, error)) *proxyHandler[Req, Resp] {
 	return &proxyHandler[Req, Resp]{
 		newRequestFunc: newRequestFunc,
 		handler:        handler,
+		logger:         discardLogger,
 	}
+}
+
+func (h *proxyHandler[Req, Resp]) SetLogger(logger *slog.Logger) {
+	h.logger = logger
 }
 
 func (h *proxyHandler[Req, Resp]) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +119,11 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithProto(w http.ResponseWriter, r *h
 		errorProto(w, st)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			h.logger.Warn("failed to close request body", "error", err.Error())
+		}
+	}()
 	req := h.newRequestFunc(ctx)
 	if err := proto.Unmarshal(body, req); err != nil {
 		errorProto(w, status.New(codes.InvalidArgument, "Unable to unmarshal request body"))
@@ -149,7 +159,6 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithProto(w http.ResponseWriter, r *h
 
 func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	defer r.Body.Close()
 	req := h.newRequestFunc(ctx)
 	bs, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -158,8 +167,13 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *ht
 		errorJSON(w, st)
 		return
 	}
-	defer r.Body.Close()
-	if err := protojson.Unmarshal(bs, req); err != nil {
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			h.logger.Warn("failed to close request body", "error", err.Error())
+		}
+	}()
+
+	if err := UnmarshalJSON(bs, req); err != nil {
 		st := status.New(codes.InvalidArgument, "Unable to unmarshal request body")
 		st, _ = st.WithDetails(&errdetails.ErrorInfo{Reason: err.Error()})
 		errorJSON(w, st)
@@ -174,7 +188,7 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *ht
 		errorJSON(w, status.New(codes.Internal, err.Error()))
 		return
 	}
-	data, err := protojson.Marshal(resp)
+	data, err := MarshalJSON(resp)
 	if err != nil {
 		st := status.New(codes.Internal, "Unable to marshal response")
 		st, _ = st.WithDetails(&errdetails.ErrorInfo{Reason: err.Error()})

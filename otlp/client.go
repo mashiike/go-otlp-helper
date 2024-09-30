@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -210,7 +209,7 @@ func newHTTPRequest[T proto.Message](ctx context.Context, so *clientSignalsOptio
 	if contentType == "application/x-protobuf" {
 		bs, err = proto.Marshal(body)
 	} else {
-		bs, err = protojson.Marshal(body)
+		bs, err = MarshalJSON(body)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal body: %w", err)
@@ -270,7 +269,7 @@ func (c *Client) uploadTracesWithHTTP(ctx context.Context, protoSpans []*Resourc
 			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 	case "application/json":
-		if err := protojson.Unmarshal(respBody, &respData); err != nil {
+		if err := UnmarshalJSON(respBody, &respData); err != nil {
 			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 	default:
@@ -367,7 +366,7 @@ func (c *Client) uploadMetricsWithHTTP(ctx context.Context, protoMetrics []*Reso
 			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 	case "application/json":
-		if err := protojson.Unmarshal(respBody, &respData); err != nil {
+		if err := UnmarshalJSON(respBody, &respData); err != nil {
 			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 	default:
@@ -463,7 +462,7 @@ func (c *Client) uploadLogsWithHTTP(ctx context.Context, protoLogs []*ResourceLo
 			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 	case "application/json":
-		if err := protojson.Unmarshal(respBody, &respData); err != nil {
+		if err := UnmarshalJSON(respBody, &respData); err != nil {
 			return fmt.Errorf("failed to unmarshal response: %w", err)
 		}
 	default:
