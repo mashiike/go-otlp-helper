@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+// nolint: gocyclo
 func grpcCodeToHTTPStatus(code codes.Code) int {
 	switch code {
 	case codes.OK:
@@ -63,7 +64,9 @@ func errorProto(w http.ResponseWriter, st *status.Status) {
 	}
 	w.Header().Set("Content-Type", "application/x-protobuf")
 	w.WriteHeader(httpStatus)
-	w.Write(bs)
+	if _, err := w.Write(bs); err != nil {
+		slog.Debug("failed to write response", "error", err.Error())
+	}
 }
 
 func errorJSON(w http.ResponseWriter, st *status.Status) {
@@ -74,7 +77,9 @@ func errorJSON(w http.ResponseWriter, st *status.Status) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(httpStatus)
-	w.Write(bs)
+	if _, err := w.Write(bs); err != nil {
+		slog.Debug("failed to write response", "error", err.Error())
+	}
 }
 
 type proxyHandler[Req, Resp proto.Message] struct {
@@ -154,7 +159,9 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithProto(w http.ResponseWriter, r *h
 	}
 	w.Header().Set("Content-Type", "application/x-protobuf")
 	w.WriteHeader(http.StatusOK)
-	io.Copy(w, &buf)
+	if _, err := io.Copy(w, &buf); err != nil {
+		h.logger.Debug("failed to write response", "error", err.Error())
+	}
 }
 
 func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +211,9 @@ func (h *proxyHandler[Req, Resp]) serveHTTPWithJSON(w http.ResponseWriter, r *ht
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	io.Copy(w, &buf)
+	if _, err := io.Copy(w, &buf); err != nil {
+		h.logger.Debug("failed to write response", "error", err.Error())
+	}
 }
 
 func HeadersFromContext(ctx context.Context) (http.Header, bool) {

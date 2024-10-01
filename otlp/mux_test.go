@@ -125,7 +125,8 @@ func TestServer__HTTP_Trace(t *testing.T) {
 	tracer := tracerProvider.Tracer("test")
 	_, span := tracer.Start(ctx, "test")
 	span.End()
-	tracerProvider.ForceFlush(ctx)
+	err = tracerProvider.ForceFlush(ctx)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, atomic.LoadInt32(&traceCount))
 	require.True(t, existsHeader.Load())
 }
@@ -164,7 +165,8 @@ func TestServer__HTTP_Metrics(t *testing.T) {
 	counter, err := meter.Int64Counter("test")
 	require.NoError(t, err)
 	counter.Add(ctx, 1)
-	meterProvider.ForceFlush(ctx)
+	err = meterProvider.ForceFlush(ctx)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, atomic.LoadInt32(&metricCount))
 	require.True(t, existsHeader.Load())
 }
@@ -215,7 +217,8 @@ func TestServer__HTTP_Logs(t *testing.T) {
 		},
 	)
 	logger.Emit(ctx, recored)
-	loggerProvider.ForceFlush(ctx)
+	err = loggerProvider.ForceFlush(ctx)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, atomic.LoadInt32(&logCount))
 	require.True(t, existsHeader.Load())
 }
@@ -267,7 +270,8 @@ func TestServer__gRPC_Trace(t *testing.T) {
 	tracer := tracerProvider.Tracer("test")
 	_, span := tracer.Start(ctx, "test")
 	span.End()
-	tracerProvider.ForceFlush(ctx)
+	err = tracerProvider.ForceFlush(ctx)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, atomic.LoadInt32(&traceCount))
 	require.True(t, existsHeader.Load())
 }
@@ -319,7 +323,8 @@ func TestServer__gRPC_Metrics(t *testing.T) {
 	counter, err := meter.Int64Counter("test")
 	require.NoError(t, err)
 	counter.Add(ctx, 1)
-	meterProvider.ForceFlush(ctx)
+	err = meterProvider.ForceFlush(ctx)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, atomic.LoadInt32(&metricCount))
 	require.True(t, existsHeader.Load())
 }
@@ -383,7 +388,8 @@ func TestServer__gRPC_Logs(t *testing.T) {
 		},
 	)
 	logger.Emit(ctx, recored)
-	loggerProvider.ForceFlush(ctx)
+	err = loggerProvider.ForceFlush(ctx)
+	require.NoError(t, err)
 	require.EqualValues(t, 1, atomic.LoadInt32(&logCount))
 	require.True(t, existsHeader.Load())
 }
