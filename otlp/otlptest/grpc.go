@@ -2,6 +2,8 @@ package otlptest
 
 import (
 	"fmt"
+	"io"
+	"log/slog"
 	"net"
 	"os"
 	"sync"
@@ -21,6 +23,7 @@ type Server struct {
 	wg     sync.WaitGroup
 
 	mu     sync.Mutex
+	logger *slog.Logger
 	closed bool
 }
 
@@ -35,8 +38,20 @@ func NewUnstartedServer(mux *otlp.ServerMux, opts ...grpc.ServerOption) *Server 
 		Listener: newLocalListener(grpcServeFlag),
 		server:   grpc.NewServer(opts...),
 	}
+	s.SetLogger(nil)
 	mux.Register(s.server)
 	return s
+}
+
+func (s *Server) SetLogger(logger *slog.Logger) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if logger == nil {
+		logger = slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{
+			Level: slog.LevelError,
+		}))
+	}
+	s.logger = logger
 }
 
 func (s *Server) Start() {
@@ -59,7 +74,9 @@ func (s *Server) goServe() {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
-		s.server.Serve(s.Listener)
+		if err := s.server.Serve(s.Listener); err != nil {
+			s.logger.Error("server.Serve", "error", err)
+		}
 	}()
 }
 
@@ -67,7 +84,12 @@ func (s *Server) Close() {
 	s.mu.Lock()
 	if !s.closed {
 		s.closed = true
-		s.Listener.Close()
+		s.Trace.close()
+		s.Metrics.close()
+		s.Logs.close()
+		if err := s.Listener.Close(); err != nil {
+			s.logger.Debug("Listener.Close", "error", err)
+		}
 		s.server.GracefulStop()
 	}
 	s.mu.Unlock()

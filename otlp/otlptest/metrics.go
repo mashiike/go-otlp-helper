@@ -3,6 +3,7 @@ package otlptest
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"sync"
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -22,10 +23,14 @@ func (s *MetricsService) close() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.provider != nil {
-		s.provider.Shutdown(context.Background())
+		if err := s.provider.Shutdown(context.Background()); err != nil {
+			slog.Warn("failed to shutdown test metrics provider", "details", err)
+		}
 	}
 	if s.exporter != nil {
-		s.exporter.Shutdown(context.Background())
+		if err := s.exporter.Shutdown(context.Background()); err != nil {
+			slog.Warn("failed to shutdown test metrics exporter", "details", err)
+		}
 	}
 }
 

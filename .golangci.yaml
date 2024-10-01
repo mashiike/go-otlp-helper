@@ -25,4 +25,10 @@ linters-settings:
   gocyclo:
     min-complexity: 15
   errcheck:
-    exclude-functions: fmt:.*,io/ioutil/net/http:^Read,^Close|^Write|,http:^Shutdown
+    exclude-functions:
+      - fmt.Fprintln
+      - io.Copy
+      - (*net/http.ResponseWriter).Write
+      - (io.ReadCloser).Close
+      - (*net/http.Server).Shutdown
+      - (net.Listener).Close

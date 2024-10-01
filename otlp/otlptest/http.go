@@ -24,8 +24,6 @@ func NewHTTPServer(mux *otlp.ServerMux) *HTTPServer {
 
 func NewUnstartedHTTPServer(mux *otlp.ServerMux) *HTTPServer {
 	server := httptest.NewUnstartedServer(mux)
-	server.Listener.Close()
-	server.Listener = newLocalListener(httpServeFlag)
 	return &HTTPServer{
 		Server: server,
 	}
@@ -44,6 +42,8 @@ func (s *HTTPServer) Start() {
 
 func (s *HTTPServer) Close() {
 	s.Trace.close()
+	s.Metrics.close()
+	s.Logs.close()
 	s.Server.Close()
 }
 
