@@ -42,7 +42,4 @@ func init() {
 	if slicesContains(os.Args, "-otlptest.grpc.serve=") || slicesContains(os.Args, "--otlptest.grpc.serve=") {
 		flag.StringVar(&grpcServeFlag, "otlptest.grpc.serve", "", "if non-empty, otlptest.NewServer gRPC serves on this address and blocks.")
 	}
-	if slicesContains(os.Args, "-otlptest.http.serve=") || slicesContains(os.Args, "--otlptest.grpc.serve=") {
-		flag.StringVar(&httpServeFlag, "otlptest.http.serve", "", "if non-empty, otlptest.NewServer HTTP serves on this address and blocks.")
-	}
 }

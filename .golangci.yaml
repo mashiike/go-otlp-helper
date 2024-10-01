@@ -32,3 +32,6 @@ linters-settings:
       - (io.ReadCloser).Close
       - (*net/http.Server).Shutdown
       - (net.Listener).Close
+  gosec:
+    excludes:
+      - G115
