@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.3.0](https://github.com/mashiike/go-otlp-helper/compare/v0.2.6...v0.3.0) - 2024-10-01
+- Refactor for ci by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/18
+- add Signal Modify utils functions `Append*` , `Split*` and `Partition*` by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/20
+
 ## [v0.2.6](https://github.com/mashiike/go-otlp-helper/compare/v0.2.5...v0.2.6) - 2024-09-30
 - fix indent marshal by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/16
 
