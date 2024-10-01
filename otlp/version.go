@@ -1,3 +1,3 @@
 package otlp
 
-var version = "0.2.6"
+var version = "0.3.0"
