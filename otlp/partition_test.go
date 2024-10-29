@@ -7,8 +7,10 @@ import (
 
 	"github.com/mashiike/go-otlp-helper/otlp"
 	"github.com/stretchr/testify/require"
+	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/metrics/v1"
+	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 )
 
@@ -128,4 +130,88 @@ func TestPartitionResourceLogs(t *testing.T) {
 	log2, err := os.ReadFile("testdata/logs2.json")
 	require.NoError(t, err)
 	require.JSONEq(t, string(log2), string(actual2))
+}
+
+func TestFilterResourceSpans(t *testing.T) {
+	bs, err := os.ReadFile("testdata/batched_trace.json")
+	require.NoError(t, err)
+	var data tracepb.TracesData
+	require.NoError(t, otlp.UnmarshalJSON(bs, &data))
+
+	require.NoError(t, err)
+	require.Equal(t, 2, otlp.TotalSpans(data.GetResourceSpans()))
+	filtered := otlp.FilterResourceSpans(
+		data.GetResourceSpans(),
+		otlp.SpanInTimeRangeFilter(
+			time.Date(2018, 12, 13, 23, 0, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
+			time.Date(2018, 12, 13, 23, 59, 59, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
+		),
+	)
+	require.Equal(t, 1, otlp.TotalSpans(filtered))
+	actual, err := otlp.MarshalJSON(&tracepb.TracesData{
+		ResourceSpans: filtered,
+	})
+	require.NoError(t, err)
+	expected, err := os.ReadFile("testdata/filtered_trace.json")
+	require.NoError(t, err)
+	t.Log("actual", string(actual))
+	t.Log("expected", string(expected))
+	require.JSONEq(t, string(expected), string(actual))
+}
+
+func TestFilterResourceMetrics(t *testing.T) {
+	bs, err := os.ReadFile("testdata/batched_metrics.json")
+	require.NoError(t, err)
+	var data metricspb.MetricsData
+	require.NoError(t, otlp.UnmarshalJSON(bs, &data))
+
+	require.NoError(t, err)
+	require.Equal(t, 7, otlp.TotalDataPoints(data.GetResourceMetrics()))
+	filtered := otlp.FilterResourceMetrics(
+		data.GetResourceMetrics(),
+		otlp.MetricDataPointInTimeRangeFilter(
+			time.Date(2018, 12, 13, 23, 51, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
+			time.Date(2018, 12, 13, 23, 51, 1, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
+		),
+		func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, m *metricspb.Metric) bool {
+			return m.GetName() == "my.counter"
+		},
+	)
+	require.Equal(t, 2, otlp.TotalDataPoints(filtered))
+	actual, err := otlp.MarshalJSON(&metricspb.MetricsData{
+		ResourceMetrics: filtered,
+	})
+	require.NoError(t, err)
+	expected, err := os.ReadFile("testdata/filtered_metrics.json")
+	require.NoError(t, err)
+	t.Log("actual", string(actual))
+	t.Log("expected", string(expected))
+	require.JSONEq(t, string(expected), string(actual))
+}
+
+func TestFilterResourceLogs(t *testing.T) {
+	bs, err := os.ReadFile("testdata/batched_logs.json")
+	require.NoError(t, err)
+	var data logspb.LogsData
+	require.NoError(t, otlp.UnmarshalJSON(bs, &data))
+
+	require.NoError(t, err)
+	require.Equal(t, 2, otlp.TotalLogRecords(data.GetResourceLogs()))
+	filtered := otlp.FilterResourceLogs(
+		data.GetResourceLogs(),
+		otlp.LogRecordInTimeRangeFilter(
+			time.Date(2018, 12, 13, 23, 51, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
+			time.Date(2018, 12, 13, 23, 51, 1, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
+		),
+	)
+	require.Equal(t, 1, otlp.TotalLogRecords(filtered))
+	actual, err := otlp.MarshalJSON(&logspb.LogsData{
+		ResourceLogs: filtered,
+	})
+	require.NoError(t, err)
+	expected, err := os.ReadFile("testdata/filtered_logs.json")
+	require.NoError(t, err)
+	t.Log("actual", string(actual))
+	t.Log("expected", string(expected))
+	require.JSONEq(t, string(expected), string(actual))
 }
