@@ -140,19 +140,19 @@ func TestFilterResourceSpans(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, otlp.TotalSpans(data.GetResourceSpans()))
-	filterd := otlp.FilterResourceSpans(
+	filtered := otlp.FilterResourceSpans(
 		data.GetResourceSpans(),
 		otlp.SpanInTimeRangeFilter(
 			time.Date(2018, 12, 13, 23, 0, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
 			time.Date(2018, 12, 13, 23, 59, 59, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
 		),
 	)
-	require.Equal(t, 1, otlp.TotalSpans(filterd))
+	require.Equal(t, 1, otlp.TotalSpans(filtered))
 	actual, err := otlp.MarshalJSON(&tracepb.TracesData{
-		ResourceSpans: filterd,
+		ResourceSpans: filtered,
 	})
 	require.NoError(t, err)
-	expected, err := os.ReadFile("testdata/filterd_trace.json")
+	expected, err := os.ReadFile("testdata/filtered_trace.json")
 	require.NoError(t, err)
 	t.Log("actual", string(actual))
 	t.Log("expected", string(expected))
@@ -167,7 +167,7 @@ func TestFilterResourceMetrics(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 7, otlp.TotalDataPoints(data.GetResourceMetrics()))
-	filterd := otlp.FilterResourceMetrics(
+	filtered := otlp.FilterResourceMetrics(
 		data.GetResourceMetrics(),
 		otlp.MetricDataPointInTimeRangeFilter(
 			time.Date(2018, 12, 13, 23, 51, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
@@ -177,12 +177,12 @@ func TestFilterResourceMetrics(t *testing.T) {
 			return m.GetName() == "my.counter"
 		},
 	)
-	require.Equal(t, 2, otlp.TotalDataPoints(filterd))
+	require.Equal(t, 2, otlp.TotalDataPoints(filtered))
 	actual, err := otlp.MarshalJSON(&metricspb.MetricsData{
-		ResourceMetrics: filterd,
+		ResourceMetrics: filtered,
 	})
 	require.NoError(t, err)
-	expected, err := os.ReadFile("testdata/filterd_metrics.json")
+	expected, err := os.ReadFile("testdata/filtered_metrics.json")
 	require.NoError(t, err)
 	t.Log("actual", string(actual))
 	t.Log("expected", string(expected))
@@ -197,19 +197,19 @@ func TestFilterResourceLogs(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Equal(t, 2, otlp.TotalLogRecords(data.GetResourceLogs()))
-	filterd := otlp.FilterResourceLogs(
+	filtered := otlp.FilterResourceLogs(
 		data.GetResourceLogs(),
 		otlp.LogRecordInTimeRangeFilter(
 			time.Date(2018, 12, 13, 23, 51, 0, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
 			time.Date(2018, 12, 13, 23, 51, 1, 0, time.FixedZone("Asia/Tokyo", 9*60*60)),
 		),
 	)
-	require.Equal(t, 1, otlp.TotalLogRecords(filterd))
+	require.Equal(t, 1, otlp.TotalLogRecords(filtered))
 	actual, err := otlp.MarshalJSON(&logspb.LogsData{
-		ResourceLogs: filterd,
+		ResourceLogs: filtered,
 	})
 	require.NoError(t, err)
-	expected, err := os.ReadFile("testdata/filterd_logs.json")
+	expected, err := os.ReadFile("testdata/filtered_logs.json")
 	require.NoError(t, err)
 	t.Log("actual", string(actual))
 	t.Log("expected", string(expected))
