@@ -293,6 +293,9 @@ func TotalDataPoints(src []*metricspb.ResourceMetrics) int {
 	return total
 }
 
+// MetricInTimeRangeFilter returns a filter function that filters metrics based on the given time range.
+//
+//nolint:gocyclo
 func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Resource, *commonpb.InstrumentationScope, *metricspb.Metric) bool {
 	return func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, metric *metricspb.Metric) bool {
 		switch data := metric.GetData().(type) {
