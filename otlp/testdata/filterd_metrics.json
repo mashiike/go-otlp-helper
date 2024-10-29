@@ -1,0 +1,112 @@
+{
+  "resourceMetrics": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "my.service"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "description": "I am a Counter",
+              "name": "my.counter",
+              "sum": {
+                "aggregationTemporality": 1,
+                "dataPoints": [
+                  {
+                    "asDouble": 5,
+                    "attributes": [
+                      {
+                        "key": "my.counter.attr",
+                        "value": {
+                          "stringValue": "some value"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1544712660300000000",
+                    "timeUnixNano": "1544712660300000000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            }
+          ],
+          "scope": {
+            "attributes": [
+              {
+                "key": "my.scope.attribute",
+                "value": {
+                  "stringValue": "some scope attribute"
+                }
+              }
+            ],
+            "name": "my.library",
+            "version": "1.0.0"
+          }
+        }
+      ]
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "service.name",
+            "value": {
+              "stringValue": "my.service"
+            }
+          }
+        ]
+      },
+      "scopeMetrics": [
+        {
+          "metrics": [
+            {
+              "description": "I am a Counter",
+              "name": "my.counter",
+              "sum": {
+                "aggregationTemporality": 1,
+                "dataPoints": [
+                  {
+                    "asDouble": 5,
+                    "attributes": [
+                      {
+                        "key": "my.counter.attr",
+                        "value": {
+                          "stringValue": "some value"
+                        }
+                      }
+                    ],
+                    "startTimeUnixNano": "1544712660400000000",
+                    "timeUnixNano": "1544712660400000000"
+                  }
+                ],
+                "isMonotonic": true
+              },
+              "unit": "1"
+            }
+          ],
+          "scope": {
+            "attributes": [
+              {
+                "key": "my.scope.attribute",
+                "value": {
+                  "stringValue": "some scope attribute"
+                }
+              }
+            ],
+            "name": "my.library",
+            "version": "1.0.0"
+          }
+        }
+      ]
+    }
+  ]
+}

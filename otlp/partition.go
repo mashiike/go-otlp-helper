@@ -3,8 +3,10 @@ package otlp
 import (
 	"time"
 
+	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logspb "go.opentelemetry.io/proto/otlp/logs/v1"
 	metricspb "go.opentelemetry.io/proto/otlp/metrics/v1"
+	resourcepb "go.opentelemetry.io/proto/otlp/resource/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 )
 
@@ -70,6 +72,34 @@ func TotalSpans(src []*tracepb.ResourceSpans) int {
 		}
 	}
 	return total
+}
+
+// SpanInTimeRangeFilter returns a filter function that filters spans based on the given time range.
+func SpanInTimeRangeFilter(start, end time.Time) func(*resourcepb.Resource, *commonpb.InstrumentationScope, *tracepb.Span) bool {
+	return func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, span *tracepb.Span) bool {
+		spanStart := time.Unix(0, int64(span.GetStartTimeUnixNano()))
+		spanEnd := time.Unix(0, int64(span.GetEndTimeUnixNano()))
+		return spanStart.After(start) && spanEnd.Before(end)
+	}
+}
+
+// FilterResourceSpans filters the given ResourceSpans slice based on the given filter function.
+func FilterResourceSpans(src []*tracepb.ResourceSpans, filters ...func(*resourcepb.Resource, *commonpb.InstrumentationScope, *tracepb.Span) bool) []*tracepb.ResourceSpans {
+	filter := andFilter(filters...)
+	splited := SplitResourceSpans(src)
+	filtered := make([]*tracepb.ResourceSpans, 0, len(splited))
+	for _, elem := range splited {
+		resource := elem.GetResource()
+		for _, elemScopeSpan := range elem.GetScopeSpans() {
+			scope := elemScopeSpan.GetScope()
+			for _, elemSpan := range elemScopeSpan.GetSpans() {
+				if filter(resource, scope, elemSpan) {
+					filtered = append(filtered, elem)
+				}
+			}
+		}
+	}
+	return filtered
 }
 
 // SplitResourceSpans splits the given ResourceSpans slice into multiple ResourceSpans slices, each containing only one Span.
@@ -261,6 +291,68 @@ func TotalDataPoints(src []*metricspb.ResourceMetrics) int {
 		}
 	}
 	return total
+}
+
+func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Resource, *commonpb.InstrumentationScope, *metricspb.Metric) bool {
+	return func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, metric *metricspb.Metric) bool {
+		switch data := metric.GetData().(type) {
+		case *metricspb.Metric_Gauge:
+			for _, elemDataPoint := range data.Gauge.GetDataPoints() {
+				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.After(start) && t.Before(end) {
+					return true
+				}
+			}
+		case *metricspb.Metric_Sum:
+			for _, elemDataPoint := range data.Sum.GetDataPoints() {
+				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.After(start) && t.Before(end) {
+					return true
+				}
+			}
+		case *metricspb.Metric_Summary:
+			for _, elemDataPoint := range data.Summary.GetDataPoints() {
+				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.After(start) && t.Before(end) {
+					return true
+				}
+			}
+		case *metricspb.Metric_Histogram:
+			for _, elemDataPoint := range data.Histogram.GetDataPoints() {
+				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.After(start) && t.Before(end) {
+					return true
+				}
+			}
+		case *metricspb.Metric_ExponentialHistogram:
+			for _, elemDataPoint := range data.ExponentialHistogram.GetDataPoints() {
+				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.After(start) && t.Before(end) {
+					return true
+				}
+			}
+		}
+		return false
+	}
+}
+
+// FilterResourceMetrics filters the given ResourceMetrics slice based on the given filter function.
+func FilterResourceMetrics(src []*metricspb.ResourceMetrics, filters ...func(*resourcepb.Resource, *commonpb.InstrumentationScope, *metricspb.Metric) bool) []*metricspb.ResourceMetrics {
+	filter := andFilter(filters...)
+	splited := SplitResourceMetrics(src)
+	filtered := make([]*metricspb.ResourceMetrics, 0, len(splited))
+	for _, elem := range splited {
+		resource := elem.GetResource()
+		for _, elemScopeMetric := range elem.GetScopeMetrics() {
+			scope := elemScopeMetric.GetScope()
+			for _, elemMetric := range elemScopeMetric.GetMetrics() {
+				if filter(resource, scope, elemMetric) {
+					filtered = append(filtered, elem)
+				}
+			}
+		}
+	}
+	return filtered
 }
 
 // SplitResourceMetrics splits the given ResourceMetrics slice into multiple ResourceMetrics slices, each containing only one data point.
@@ -478,6 +570,32 @@ func SplitResourceLogs(src []*logspb.ResourceLogs) []*logspb.ResourceLogs {
 	return dst
 }
 
+func LogRecordInTimeRangeFilter(start, end time.Time) func(*resourcepb.Resource, *commonpb.InstrumentationScope, *logspb.LogRecord) bool {
+	return func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, logRecord *logspb.LogRecord) bool {
+		t := time.Unix(0, int64(logRecord.GetTimeUnixNano()))
+		return t.After(start) && t.Before(end)
+	}
+}
+
+// FilterResourceLogs filters the given ResourceLogs slice based on the given filter function.
+func FilterResourceLogs(src []*logspb.ResourceLogs, filters ...func(*resourcepb.Resource, *commonpb.InstrumentationScope, *logspb.LogRecord) bool) []*logspb.ResourceLogs {
+	filter := andFilter(filters...)
+	splited := SplitResourceLogs(src)
+	filtered := make([]*logspb.ResourceLogs, 0, len(splited))
+	for _, elem := range splited {
+		resource := elem.GetResource()
+		for _, elemScopeLogs := range elem.GetScopeLogs() {
+			scope := elemScopeLogs.GetScope()
+			for _, elemLogRecord := range elemScopeLogs.GetLogRecords() {
+				if filter(resource, scope, elemLogRecord) {
+					filtered = append(filtered, elem)
+				}
+			}
+		}
+	}
+	return filtered
+}
+
 func splitScopeLogs(src []*logspb.ScopeLogs) []*logspb.ScopeLogs {
 	dst := make([]*logspb.ScopeLogs, 0, len(src))
 	for _, elem := range src {
@@ -490,4 +608,15 @@ func splitScopeLogs(src []*logspb.ScopeLogs) []*logspb.ScopeLogs {
 		}
 	}
 	return dst
+}
+
+func andFilter[T any](filters ...func(*resourcepb.Resource, *commonpb.InstrumentationScope, T) bool) func(*resourcepb.Resource, *commonpb.InstrumentationScope, T) bool {
+	return func(r *resourcepb.Resource, s *commonpb.InstrumentationScope, t T) bool {
+		for _, f := range filters {
+			if !f(r, s, t) {
+				return false
+			}
+		}
+		return true
+	}
 }
