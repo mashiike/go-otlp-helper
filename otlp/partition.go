@@ -79,6 +79,9 @@ func SpanInTimeRangeFilter(start, end time.Time) func(*resourcepb.Resource, *com
 	return func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, span *tracepb.Span) bool {
 		spanStart := time.Unix(0, int64(span.GetStartTimeUnixNano()))
 		spanEnd := time.Unix(0, int64(span.GetEndTimeUnixNano()))
+		if spanStart.Equal(start) || spanStart.Equal(end) {
+			return true
+		}
 		return spanStart.After(start) && spanEnd.Before(end)
 	}
 }
@@ -302,6 +305,9 @@ func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Res
 		case *metricspb.Metric_Gauge:
 			for _, elemDataPoint := range data.Gauge.GetDataPoints() {
 				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.Equal(start) || t.Equal(end) {
+					return true
+				}
 				if t.After(start) && t.Before(end) {
 					return true
 				}
@@ -309,6 +315,9 @@ func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Res
 		case *metricspb.Metric_Sum:
 			for _, elemDataPoint := range data.Sum.GetDataPoints() {
 				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.Equal(start) || t.Equal(end) {
+					return true
+				}
 				if t.After(start) && t.Before(end) {
 					return true
 				}
@@ -316,6 +325,9 @@ func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Res
 		case *metricspb.Metric_Summary:
 			for _, elemDataPoint := range data.Summary.GetDataPoints() {
 				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.Equal(start) || t.Equal(end) {
+					return true
+				}
 				if t.After(start) && t.Before(end) {
 					return true
 				}
@@ -323,6 +335,9 @@ func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Res
 		case *metricspb.Metric_Histogram:
 			for _, elemDataPoint := range data.Histogram.GetDataPoints() {
 				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.Equal(start) || t.Equal(end) {
+					return true
+				}
 				if t.After(start) && t.Before(end) {
 					return true
 				}
@@ -330,6 +345,9 @@ func MetricDataPointInTimeRangeFilter(start, end time.Time) func(*resourcepb.Res
 		case *metricspb.Metric_ExponentialHistogram:
 			for _, elemDataPoint := range data.ExponentialHistogram.GetDataPoints() {
 				t := time.Unix(0, int64(elemDataPoint.GetTimeUnixNano()))
+				if t.Equal(start) || t.Equal(end) {
+					return true
+				}
 				if t.After(start) && t.Before(end) {
 					return true
 				}
@@ -576,6 +594,9 @@ func SplitResourceLogs(src []*logspb.ResourceLogs) []*logspb.ResourceLogs {
 func LogRecordInTimeRangeFilter(start, end time.Time) func(*resourcepb.Resource, *commonpb.InstrumentationScope, *logspb.LogRecord) bool {
 	return func(_ *resourcepb.Resource, _ *commonpb.InstrumentationScope, logRecord *logspb.LogRecord) bool {
 		t := time.Unix(0, int64(logRecord.GetTimeUnixNano()))
+		if t.Equal(start) || t.Equal(end) {
+			return true
+		}
 		return t.After(start) && t.Before(end)
 	}
 }
