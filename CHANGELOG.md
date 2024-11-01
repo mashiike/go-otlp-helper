@@ -1,5 +1,8 @@
 # Changelog
 
+## [v0.4.1](https://github.com/mashiike/go-otlp-helper/compare/v0.4.0...v0.4.1) - 2024-11-01
+- include Edge by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/26
+
 ## [v0.4.0](https://github.com/mashiike/go-otlp-helper/compare/v0.3.0...v0.4.0) - 2024-10-29
 - Bump the open-telemetry group with 11 updates by @dependabot in https://github.com/mashiike/go-otlp-helper/pull/23
 - add filter utils by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/24
