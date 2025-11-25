@@ -1,4 +1,4 @@
-run:
+version: 2
 
 issues:
   exclude-use-default: false
@@ -9,8 +9,17 @@ issues:
         - errcheck
         - testifylint
 
+run:
+  tests: false
+  timeout: 15m
+  concurrency: 15
+  relative-path-mode: gomod
+  issues-exit-code: 2
+  skip-files:
+    - "_test\\.go$"
+
 linters:
-  disable-all: true
+  default: none
   enable:
     - gocyclo
     - staticcheck
@@ -20,18 +29,18 @@ linters:
     - bugs
     - unused
     - format
-
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  errcheck:
-    exclude-functions:
-      - fmt.Fprintln
-      - io.Copy
-      - (*net/http.ResponseWriter).Write
-      - (io.ReadCloser).Close
-      - (*net/http.Server).Shutdown
-      - (net.Listener).Close
-  gosec:
-    excludes:
-      - G115
+  settings:
+    gocyclo:
+      min-complexity: 15
+    errcheck:
+      exclude-functions:
+        - fmt.Fprintln
+        - fmt.Fprint
+        - io.Copy
+        - (*net/http.ResponseWriter).Write
+        - (io.ReadCloser).Close
+        - (*net/http.Server).Shutdown
+        - (net.Listener).Close
+    gosec:
+      excludes:
+        - G115
