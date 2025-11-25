@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.4.2](https://github.com/mashiike/go-otlp-helper/compare/v0.4.1...v0.4.2) - 2025-11-25
+- Bump google.golang.org/grpc from 1.67.1 to 1.70.0 by @dependabot[bot] in https://github.com/mashiike/go-otlp-helper/pull/44
+- Update deps and contributor guide by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/48
+- Bump golang.org/x/net from 0.29.0 to 0.38.0 in /examples/lambda by @dependabot[bot] in https://github.com/mashiike/go-otlp-helper/pull/47
+
 ## [v0.4.1](https://github.com/mashiike/go-otlp-helper/compare/v0.4.0...v0.4.1) - 2024-11-01
 - include Edge by @mashiike in https://github.com/mashiike/go-otlp-helper/pull/26
 
